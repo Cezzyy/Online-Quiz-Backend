@@ -11,7 +11,7 @@ namespace OnlineQuiz.Utilities
         /// <returns>Hashed password</returns>
         public static string HashPassword(string password)
         {
-            return BCrypt.Net.BCrypt.HashPassword(password, BCrypt.Net.BCrypt.GenerateSalt());
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
 
         /// <summary>

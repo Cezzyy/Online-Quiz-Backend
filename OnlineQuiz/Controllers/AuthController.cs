@@ -27,9 +27,9 @@ namespace OnlineQuiz.Controllers
         public async Task<ActionResult<LoginResponseDto>> Login(LoginDto loginDto)
         {
             var response = await _userService.AuthenticateAsync(loginDto);
-            if (response == null)
+            if (response == null || !response.Success || response.Data == null)
             {
-                return Unauthorized("Invalid email or password");
+                return Unauthorized(response?.Message ?? "Invalid email or password");
             }
 
             // Check if request is from web client (has specific header or user agent)
