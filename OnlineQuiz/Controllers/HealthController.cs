@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineQuiz.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace OnlineQuiz.Controllers
 {

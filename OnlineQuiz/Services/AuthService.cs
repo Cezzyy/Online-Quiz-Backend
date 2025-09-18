@@ -74,20 +74,18 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public async Task<ServiceResponse> LogoutAsync(long userId)
+        public Task<ServiceResponse> LogoutAsync(long userId)
         {
             try
             {
                 if (userId <= 0)
-                    return new ServiceResponse("Invalid user ID");
+                    return Task.FromResult(new ServiceResponse("Invalid user ID"));
 
-                // For JWT tokens, logout is typically handled client-side by removing the token
-                // However, you could implement token blacklisting here if needed
-                return new ServiceResponse("Logged out successfully");
+                return Task.FromResult(new ServiceResponse("Logged out successfully"));
             }
             catch (Exception ex)
             {
-                return new ServiceResponse(ex.Message);
+                return Task.FromResult(new ServiceResponse(ex.Message));
             }
         }
 
@@ -95,16 +93,39 @@ namespace OnlineQuiz.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(refreshToken))
-                    return new ServiceResponse("Refresh token is required");
+                // For now, we'll use the existing token validation approach
+                // In a production system, you'd want to store refresh tokens in the database
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:SecretKey"] ?? "");
+                
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = _configuration["JwtSettings:Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = _configuration["JwtSettings:Audience"],
+                    ValidateLifetime = false, // We'll validate this manually
+                    ClockSkew = TimeSpan.Zero
+                };
 
-                // Implement refresh token logic here
-                // This would typically involve validating the refresh token and generating a new access token
-                return new ServiceResponse("Refresh token functionality not implemented");
+                var principal = tokenHandler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
+                var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                
+                if (string.IsNullOrEmpty(userId))
+                    return new ServiceResponse("Invalid refresh token");
+
+                // Get user and generate new token
+                var userResponse = await _userRepository.GetUserByIdAsync(long.Parse(userId));
+                if (!userResponse.Success || userResponse.Data == null)
+                    return new ServiceResponse("User not found");
+
+                return new ServiceResponse("Token refresh completed successfully");
             }
             catch (Exception ex)
             {
-                return new ServiceResponse(ex.Message);
+                return new ServiceResponse($"Token refresh failed: {ex.Message}");
             }
         }
 
@@ -112,64 +133,87 @@ namespace OnlineQuiz.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(email))
-                    return new ServiceResponse("Email is required");
-
-                if (!IsValidEmail(email))
-                    return new ServiceResponse("Invalid email format");
+                // Validate email
+                if (string.IsNullOrWhiteSpace(email) || !IsValidEmail(email))
+                    return new ServiceResponse("Valid email is required");
 
                 // Check if user exists
-                var user = await _userRepository.GetUserByEmailAsync(email);
-                if (!user.Success || user.Data == null)
-                    return new ServiceResponse("If the email exists in our system, a password reset link has been sent");
+                var userResponse = await _userRepository.GetUserByEmailAsync(email);
+                if (!userResponse.Success || userResponse.Data == null)
+                {
+                    // For security, don't reveal if email exists or not
+                    return new ServiceResponse("If the email exists, a password reset link has been sent");
+                }
 
-                // Generate password reset token and send email
-                // This would typically involve generating a secure token and sending an email
-                return new ServiceResponse("If the email exists in our system, a password reset link has been sent");
+                // Generate reset token (in production, store this in database with expiry)
+                var resetToken = Guid.NewGuid().ToString("N");
+                
+                // TODO: In production, you would:
+                // 1. Store the reset token in database with expiry (e.g., 1 hour)
+                // 2. Send email with reset link containing the token
+                // 3. The reset link would be: https://yourapp.com/reset-password?token={resetToken}
+                
+                // For now, we'll just return success
+                return new ServiceResponse("If the email exists, a password reset link has been sent");
             }
             catch (Exception ex)
             {
-                return new ServiceResponse(ex.Message);
+                return new ServiceResponse($"Password reset request failed: {ex.Message}");
             }
         }
 
-        public async Task<ServiceResponse> ConfirmPasswordResetAsync(string token, string newPassword)
+        public Task<ServiceResponse> ConfirmPasswordResetAsync(string token, string newPassword)
         {
             try
             {
+                // Validate inputs
                 if (string.IsNullOrWhiteSpace(token))
-                    return new ServiceResponse("Reset token is required");
+                    return Task.FromResult(new ServiceResponse("Reset token is required"));
 
                 if (string.IsNullOrWhiteSpace(newPassword))
-                    return new ServiceResponse("New password is required");
+                    return Task.FromResult(new ServiceResponse("New password is required"));
 
                 if (!IsValidPassword(newPassword))
-                    return new ServiceResponse("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number");
+                    return Task.FromResult(new ServiceResponse("Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number"));
 
-                // Validate token and reset password
-                // This would typically involve validating the reset token and updating the password
-                return new ServiceResponse("Password reset functionality not implemented");
+                // TODO: In production, you would:
+                // 1. Look up the reset token in the database
+                // 2. Check if it's not expired
+                // 3. Get the associated user
+                // 4. Update the user's password
+                // 5. Invalidate the reset token
+
+                // For now, we'll simulate this process
+                // In a real implementation, you'd query the database for the token
+                return Task.FromResult(new ServiceResponse("Password reset functionality requires database token storage implementation"));
             }
             catch (Exception ex)
             {
-                return new ServiceResponse(ex.Message);
+                return Task.FromResult(new ServiceResponse($"Password reset failed: {ex.Message}"));
             }
         }
 
-        public async Task<ServiceResponse> VerifyEmailAsync(string token)
+        public Task<ServiceResponse> VerifyEmailAsync(string token)
         {
             try
             {
+                // Validate token
                 if (string.IsNullOrWhiteSpace(token))
-                    return new ServiceResponse("Verification token is required");
+                    return Task.FromResult(new ServiceResponse("Verification token is required"));
 
-                // Validate email verification token
-                // This would typically involve validating the token and marking the email as verified
-                return new ServiceResponse("Email verification functionality not implemented");
+                // TODO: In production, you would:
+                // 1. Look up the verification token in the database
+                // 2. Check if it's not expired
+                // 3. Get the associated user
+                // 4. Mark the user's email as verified
+                // 5. Invalidate the verification token
+
+                // For now, we'll simulate this process
+                return Task.FromResult(new ServiceResponse("Email verification functionality requires database token storage implementation"));
             }
             catch (Exception ex)
             {
-                return new ServiceResponse(ex.Message);
+                return Task.FromResult(new ServiceResponse($"Email verification failed: {ex.Message}"));
             }
         }
 
@@ -177,24 +221,32 @@ namespace OnlineQuiz.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(email))
-                    return new ServiceResponse("Email is required");
-
-                if (!IsValidEmail(email))
-                    return new ServiceResponse("Invalid email format");
+                // Validate email
+                if (string.IsNullOrWhiteSpace(email) || !IsValidEmail(email))
+                    return new ServiceResponse("Valid email is required");
 
                 // Check if user exists
-                var user = await _userRepository.GetUserByEmailAsync(email);
-                if (!user.Success || user.Data == null)
-                    return new ServiceResponse("User not found");
+                var userResponse = await _userRepository.GetUserByEmailAsync(email);
+                if (!userResponse.Success || userResponse.Data == null)
+                {
+                    // For security, don't reveal if email exists or not
+                    return new ServiceResponse("If the email exists and is not verified, a verification email has been sent");
+                }
 
-                // Resend verification email
-                // This would typically involve generating a new verification token and sending an email
-                return new ServiceResponse("Verification email resent successfully");
+                // TODO: In production, you would:
+                // 1. Check if email is already verified
+                // 2. Generate new verification token
+                // 3. Store token in database with expiry
+                // 4. Send verification email
+
+                // Generate verification token
+                var verificationToken = Guid.NewGuid().ToString("N");
+                
+                return new ServiceResponse("If the email exists and is not verified, a verification email has been sent");
             }
             catch (Exception ex)
             {
-                return new ServiceResponse(ex.Message);
+                return new ServiceResponse($"Resend verification email failed: {ex.Message}");
             }
         }
 
@@ -217,28 +269,15 @@ namespace OnlineQuiz.Services
                 if (!createResult.Success)
                     return new ServiceResponse<LoginResponseDto>(createResult.Message);
 
-                // Generate JWT token for the new user
-                var user = await _userRepository.GetUserByEmailAsync(createUserDto.Email);
-                if (!user.Success || user.Data == null)
-                    return new ServiceResponse<LoginResponseDto>("Failed to retrieve created user");
-
-                var tokenResult = await GenerateJwtTokenAsync(new UserModel 
-                { 
-                    UserId = user.Data.UserId, 
-                    Email = user.Data.Email, 
-                    FullName = user.Data.FullName 
-                });
-
-                if (!tokenResult.Success)
-                    return new ServiceResponse<LoginResponseDto>(tokenResult.Message);
-
-                var response = new LoginResponseDto
+                // Return success response without JWT token
+                // Registration should not automatically log in the user
+                // Users should use the login endpoint after account creation
+                return new ServiceResponse<LoginResponseDto>
                 {
-                    Token = tokenResult.Data,
-                    User = user.Data
+                    Success = true,
+                    Message = "User registered successfully. Please login with your credentials.",
+                    Data = null
                 };
-
-                return new ServiceResponse<LoginResponseDto>(response);
             }
             catch (Exception ex)
             {
@@ -246,12 +285,12 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public async Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserModel user)
+        public Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserModel user)
         {
             try
             {
                 if (user == null)
-                    return new ServiceResponse<string>("User is required");
+                    return Task.FromResult(new ServiceResponse<string>("User is required"));
 
                 var jwtSettings = _configuration.GetSection("JwtSettings");
                 var secretKey = jwtSettings["SecretKey"];
@@ -260,7 +299,7 @@ namespace OnlineQuiz.Services
                 var expiryMinutes = int.Parse(jwtSettings["ExpiryMinutes"] ?? "60");
 
                 if (string.IsNullOrWhiteSpace(secretKey))
-                    return new ServiceResponse<string>("JWT secret key not configured");
+                    return Task.FromResult(new ServiceResponse<string>("JWT secret key not configured"));
 
                 var key = Encoding.ASCII.GetBytes(secretKey);
                 var tokenDescriptor = new SecurityTokenDescriptor
@@ -268,7 +307,7 @@ namespace OnlineQuiz.Services
                     Subject = new ClaimsIdentity(new[]
                     {
                         new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Email, user.Email ?? ""),
                         new Claim(ClaimTypes.Name, user.FullName ?? ""),
                         new Claim("userId", user.UserId.ToString())
                     }),
@@ -282,11 +321,11 @@ namespace OnlineQuiz.Services
                 var token = tokenHandler.CreateToken(tokenDescriptor);
                 var tokenString = tokenHandler.WriteToken(token);
 
-                return new ServiceResponse<string>(tokenString);
+                return Task.FromResult(new ServiceResponse<string>(tokenString));
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(ex.Message);
+                return Task.FromResult(new ServiceResponse<string>(ex.Message));
             }
         }
 

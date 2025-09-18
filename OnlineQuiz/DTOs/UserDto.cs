@@ -42,4 +42,20 @@ namespace OnlineQuiz.DTOs
         public string Token { get; set; } = string.Empty;
         public UserDto User { get; set; } = null!;
     }
+
+    public class ForgotPasswordDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordDto
+    {
+        public string Token { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class ResendVerificationDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
 }
