@@ -209,7 +209,7 @@ namespace OnlineQuiz.Class
             }
         }
 
-        public async Task<ServiceResponse> AssignRoleAsync(long userId, long roleId)
+        public async Task<ServiceResponse> AssignRoleAsync(long userId, short roleId)
         {
             try
             {
@@ -230,7 +230,7 @@ namespace OnlineQuiz.Class
             }
         }
 
-        public async Task<ServiceResponse> RemoveRoleAsync(long userId, long roleId)
+        public async Task<ServiceResponse> RemoveRoleAsync(long userId, short roleId)
         {
             try
             {
@@ -269,7 +269,7 @@ namespace OnlineQuiz.Class
             }
         }
 
-        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(long roleId)
+        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(short roleId)
         {
             try
             {

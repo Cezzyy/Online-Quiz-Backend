@@ -8,6 +8,7 @@ using OnlineQuiz.IServices;
 using OnlineQuiz.Configuration;
 using OnlineQuiz.Mappings;
 using OnlineQuiz.IRepository;
+using OnlineQuiz.Repository;
 using OnlineQuiz.Class;
 using Scalar.AspNetCore;
 using DotNetEnv;
@@ -100,15 +101,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 // Register Repository Layer
-builder.Services.AddScoped<IUserRepository, UserClass>();
-builder.Services.AddScoped<ICourseRepository, CourseClass>();
-builder.Services.AddScoped<IQuizRepository, QuizClass>();
-builder.Services.AddScoped<ILoginRepository, LoginClass>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ILoginRepository, LoginRepository>();
+// builder.Services.AddScoped<ICourseRepository, CourseClass>();
+// builder.Services.AddScoped<IQuizRepository, QuizClass>();
 
 // Register Service Layer
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ICourseService, CourseService>();
-builder.Services.AddScoped<IQuizService, QuizService>();
+// builder.Services.AddScoped<ICourseService, CourseService>();
+// builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Configure CORS for Web (Vue) and Mobile (Flutter)
