@@ -12,7 +12,7 @@ using OnlineQuiz.Data;
 namespace OnlineQuiz.Migrations
 {
     [DbContext(typeof(OnlineQuizDbContext))]
-    [Migration("20250919021740_InitialCreate")]
+    [Migration("20250919022544_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -498,12 +498,13 @@ namespace OnlineQuiz.Migrations
 
                     b.HasOne("OnlineQuiz.Models.ChoiceModel", "Choice")
                         .WithMany("AttemptAnswers")
-                        .HasForeignKey("ChoiceId");
+                        .HasForeignKey("ChoiceId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("OnlineQuiz.Models.QuestionModel", "Question")
                         .WithMany("AttemptAnswers")
                         .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Attempt");
@@ -518,13 +519,13 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.QuizModel", "Quiz")
                         .WithMany("Attempts")
                         .HasForeignKey("QuizId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("OnlineQuiz.Models.UserModel", "User")
                         .WithMany("Attempts")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Quiz");
@@ -548,7 +549,7 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.TeacherModel", "Instructor")
                         .WithMany("Courses")
                         .HasForeignKey("InstructorUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Instructor");
@@ -559,13 +560,13 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.CourseModel", "Course")
                         .WithMany("Enrollments")
                         .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("OnlineQuiz.Models.UserModel", "User")
                         .WithMany("Enrollments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Course");
@@ -578,7 +579,7 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.UserModel", "User")
                         .WithMany("ExportImportLogs")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -593,7 +594,7 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.UserModel", "User")
                         .WithMany("Notifications")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Course");
@@ -617,7 +618,7 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.CourseModel", "Course")
                         .WithMany("Quizzes")
                         .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Course");
@@ -650,7 +651,7 @@ namespace OnlineQuiz.Migrations
                     b.HasOne("OnlineQuiz.Models.RoleModel", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("OnlineQuiz.Models.UserModel", "User")
