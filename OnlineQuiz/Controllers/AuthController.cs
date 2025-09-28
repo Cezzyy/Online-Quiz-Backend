@@ -11,12 +11,10 @@ namespace OnlineQuiz.Controllers
     [Tags("Auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IUserService _userService;
         private readonly IAuthService _authService;
 
-        public AuthController(IUserService userService, IAuthService authService)
+        public AuthController(IAuthService authService)
         {
-            _userService = userService;
             _authService = authService;
         }
 
@@ -38,19 +36,34 @@ namespace OnlineQuiz.Controllers
             var userAgent = Request.Headers.UserAgent.ToString().ToLower();
             var clientType = Request.Headers["X-Client-Type"].ToString().ToLower();
             
-            // Set JWT cookie for web clients (Vue/TypeScript)
+            // Set JWT and refresh token cookies for web clients (Vue/TypeScript)
             if (clientType == "web" || userAgent.Contains("mozilla"))
             {
-                var cookieOptions = new CookieOptions
+                // Access token cookie (short-lived) - using __Host- prefix for security
+                var accessTokenOptions = new CookieOptions
                 {
-                    HttpOnly = true, // Prevent XSS attacks
-                    Secure = Request.IsHttps, // Only send over HTTPS in production
-                    SameSite = SameSiteMode.Lax, // CSRF protection
-                    Expires = DateTime.UtcNow.AddHours(24), // Match JWT expiration
-                    Path = "/"
+                    HttpOnly = true, 
+                    Secure = true, 
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTime.UtcNow.AddSeconds(response.Data.ExpiresIn),
+                    Path = "/" 
                 };
                 
-                Response.Cookies.Append("jwt", response.Data.Token, cookieOptions);
+                // Refresh token cookie (long-lived)
+                var refreshTokenOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true, 
+                    SameSite = SameSiteMode.Lax, 
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    Path = "/" 
+                };
+                Response.Cookies.Append("__Host-jwt", response.Data.AccessToken, accessTokenOptions);
+                if (!string.IsNullOrEmpty(response.Data.RefreshToken))
+                {
+                    Response.Cookies.Append("__Host-refresh", response.Data.RefreshToken, refreshTokenOptions);
+                }
+                response.Data.RefreshToken = null;
             }
 
             return Ok(response);
@@ -70,17 +83,18 @@ namespace OnlineQuiz.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var email = User.FindFirst(ClaimTypes.Email)?.Value;
                 
-                // Clear JWT cookie for web clients
+                // Clear both JWT and refresh token cookies for web clients
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = Request.IsHttps,
+                    Secure = true,
                     SameSite = SameSiteMode.Lax,
                     Expires = DateTime.UtcNow.AddDays(-1), // Expire the cookie
                     Path = "/"
                 };
                 
-                Response.Cookies.Append("jwt", "", cookieOptions);
+                Response.Cookies.Append("__Host-jwt", "", cookieOptions);
+                Response.Cookies.Append("__Host-refresh", "", cookieOptions);
                 
                 return Ok(new { 
                     message = "Logged out successfully",
@@ -93,17 +107,18 @@ namespace OnlineQuiz.Controllers
             }
             catch (Exception)
             {
-                // Still clear the cookie even if there's an error
+                // Still clear both cookies even if there's an error
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = Request.IsHttps,
+                    Secure = true,
                     SameSite = SameSiteMode.Lax,
                     Expires = DateTime.UtcNow.AddDays(-1),
                     Path = "/"
                 };
                 
-                Response.Cookies.Append("jwt", "", cookieOptions);
+                Response.Cookies.Append("__Host-jwt", "", cookieOptions);
+                Response.Cookies.Append("__Host-refresh", "", cookieOptions);
                 
                 return Ok(new { 
                     message = "Logged out successfully",
@@ -158,7 +173,79 @@ namespace OnlineQuiz.Controllers
             }
         }
 
+        /// <summary>
+        /// Refresh access token using refresh token
+        /// Supports both web clients (cookie-based) and mobile clients (body-based)
+        /// </summary>
+        /// <param name="request">Optional refresh token for mobile clients</param>
+        /// <returns>New access token and refresh token</returns>
+        [HttpPost("refresh")]
+        public async Task<ActionResult<RefreshTokenResponseDto>> RefreshToken([FromBody] RefreshRequest? request = null)
+        {
+            // 1) Try cookie first (web browsers)
+            var cookieToken = Request.Cookies["__Host-refresh"];
+            
+            // 2) Fallback to body (mobile/API clients)
+            var incomingToken = !string.IsNullOrWhiteSpace(cookieToken) 
+                ? cookieToken 
+                : request?.RefreshToken;
+            
+            if (string.IsNullOrWhiteSpace(incomingToken))
+            {
+                return Problem(statusCode: 401, title: "Missing refresh token");
+            }
 
+            // Validate and rotate the refresh token
+            var tokenDto = new RefreshTokenDto { RefreshToken = incomingToken };
+            var response = await _authService.RefreshTokenAsync(tokenDto);
+            
+            if (response == null || !response.Success || response.Data == null)
+            {
+                // Clear invalid cookies if token came from cookie (web client)
+                if (!string.IsNullOrWhiteSpace(cookieToken))
+                {
+                    Response.Cookies.Delete("__Host-refresh");
+                    Response.Cookies.Delete("__Host-jwt");
+                }
+                return Problem(statusCode: 401, title: response?.Message ?? "Invalid refresh token");
+            }
+
+            // Set new cookies for web clients (if token came from cookie)
+            var isWebClient = !string.IsNullOrWhiteSpace(cookieToken);
+            if (isWebClient)
+            {
+                // Access token cookie (short-lived)
+                var accessTokenOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTime.UtcNow.AddSeconds(response.Data.ExpiresIn),
+                    Path = "/"
+                };
+                
+                // Refresh token cookie (long-lived)
+                var refreshTokenOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTime.UtcNow.AddDays(7), // 7 days
+                    Path = "/"
+                };
+                
+                Response.Cookies.Append("__Host-jwt", response.Data.AccessToken, accessTokenOptions);
+                if (!string.IsNullOrEmpty(response.Data.RefreshToken))
+                {
+                    Response.Cookies.Append("__Host-refresh", response.Data.RefreshToken, refreshTokenOptions);
+                }
+                
+                // Don't return refresh token in JSON for web clients (security)
+                response.Data.RefreshToken = null;
+            }
+
+            return Ok(response);
+        }
 
     }
 }

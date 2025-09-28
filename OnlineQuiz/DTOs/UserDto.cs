@@ -46,10 +46,46 @@ namespace OnlineQuiz.DTOs
         public string Password { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Clean user summary for login responses (no PII)
+    /// </summary>
+    public class UserSummaryDto
+    {
+        public long Id { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public List<string> Roles { get; set; } = [];
+    }
+
     public class LoginResponseDto
     {
-        public string Token { get; set; } = string.Empty;
-        public UserDto User { get; set; } = null!;
+        public string AccessToken { get; set; } = string.Empty;
+        public string? RefreshToken { get; set; } // Only for non-web clients
+        public int ExpiresIn { get; set; } // Seconds until expiration
+        public UserSummaryDto User { get; set; } = null!;
+    }
+
+    public class RefreshTokenDto
+    {
+        public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Request DTO for refresh endpoint - supports both web (cookie) and mobile (body) clients
+    /// </summary>
+    public class RefreshRequest
+    {
+        /// <summary>
+        /// Optional refresh token for mobile clients. Web clients use cookies instead.
+        /// </summary>
+        public string? RefreshToken { get; set; }
+    }
+
+    public class RefreshTokenResponseDto
+    {
+        public string AccessToken { get; set; } = string.Empty;
+        public string? RefreshToken { get; set; } // Only for non-web clients
+        public int ExpiresIn { get; set; } // Seconds until expiration
     }
 
     public class TeacherDto

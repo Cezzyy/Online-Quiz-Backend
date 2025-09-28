@@ -13,6 +13,7 @@ namespace OnlineQuiz.Data
         public DbSet<UserModel> Users { get; set; } = null!;
         public DbSet<RoleModel> Roles { get; set; } = null!;
         public DbSet<UserRoleModel> UserRoles { get; set; } = null!;
+        public DbSet<RefreshTokenModel> RefreshTokens { get; set; } = null!;
         public DbSet<TeacherModel> Teachers { get; set; } = null!;
         public DbSet<StudentModel> Students { get; set; } = null!;
         public DbSet<CourseModel> Courses { get; set; } = null!;

@@ -1,6 +1,7 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using OnlineQuiz.Configuration;
 using OnlineQuiz.Models;
@@ -38,7 +39,7 @@ namespace OnlineQuiz.Utilities
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationInMinutes),
+                Expires = DateTime.UtcNow.AddMinutes(jwtSettings.AccessTokenExpirationInMinutes),
                 Issuer = jwtSettings.Issuer,
                 Audience = jwtSettings.Audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -46,6 +47,18 @@ namespace OnlineQuiz.Utilities
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        /// <summary>
+        /// Generates a secure refresh token
+        /// </summary>
+        /// <returns>Base64 encoded refresh token</returns>
+        public static string GenerateRefreshToken()
+        {
+            var randomBytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
         }
 
         /// <summary>

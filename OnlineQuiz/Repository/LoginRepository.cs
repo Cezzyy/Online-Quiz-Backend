@@ -55,11 +55,19 @@ namespace OnlineQuiz.Repository
                 var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
                 var token = JwtTokenHelper.GenerateToken(user, roles, _jwtSettings);
                 var userDto = _mapper.Map<UserDto>(user);
+                var userSummary = new UserSummaryDto
+                {
+                    Id = userDto.UserId,
+                    Email = userDto.Email,
+                    FullName = userDto.FullName,
+                    Roles = roles
+                };
 
                 var loginResponse = new LoginResponseDto
                 {
-                    Token = token,
-                    User = userDto
+                    AccessToken = token,
+                    ExpiresIn = _jwtSettings.AccessTokenExpirationInMinutes * 60,
+                    User = userSummary
                 };
 
                 return new ServiceResponse<LoginResponseDto>

@@ -3,7 +3,11 @@ using OnlineQuiz.IServices;
 using OnlineQuiz.Models;
 using OnlineQuiz.Models.Response;
 using OnlineQuiz.DTOs;
+using OnlineQuiz.Data;
+using OnlineQuiz.Configuration;
+using OnlineQuiz.Utilities;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -14,11 +18,13 @@ namespace OnlineQuiz.Services
     {
         private readonly ILoginRepository _loginRepository;
         private readonly IConfiguration _configuration;
+        private readonly OnlineQuizDbContext _context;
 
-        public AuthService(ILoginRepository loginRepository, IConfiguration configuration)
+        public AuthService(ILoginRepository loginRepository, IConfiguration configuration, OnlineQuizDbContext context)
         {
             _loginRepository = loginRepository;
             _configuration = configuration;
+            _context = context;
         }
 
         public async Task<ServiceResponse<LoginResponseDto>> AuthenticateAsync(LoginDto loginDto)
@@ -40,13 +46,61 @@ namespace OnlineQuiz.Services
 
                 // Authenticate user
                 var authResult = await _loginRepository.AuthenticateAsync(loginDto);
-                if (authResult is null || !authResult.Success)
+                if (authResult is null || !authResult.Success || authResult.Data?.User == null)
                 {
                     var msg = authResult?.Message ?? "Invalid email or password";
                     return new ServiceResponse<LoginResponseDto>(msg);
                 }
 
-                return authResult;
+                var userDto = authResult.Data.User;
+                
+                // Fetch UserModel from database for JWT generation
+                var userModel = await _context.Users
+                    .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.UserId == userDto.Id);
+                
+                if (userModel == null)
+                    return new ServiceResponse<LoginResponseDto>("User not found");
+                
+                // Generate new access token (15 minutes) and refresh token (7 days)
+                var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
+                var roles = userModel.UserRoles?.Select(ur => ur.Role.Name).ToList() ?? [];
+                
+                var accessToken = JwtTokenHelper.GenerateToken(userModel, roles, jwtSettings);
+                var refreshToken = JwtTokenHelper.GenerateRefreshToken();
+                
+                // Store refresh token in database
+                var refreshTokenEntity = new RefreshTokenModel
+                {
+                    Token = refreshToken,
+                    UserId = userModel.UserId,
+                    ExpiresAt = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpirationInDays),
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.RefreshTokens.Add(refreshTokenEntity);
+                await _context.SaveChangesAsync();
+                
+                // Create clean user summary (no PII)
+                var userSummary = new UserSummaryDto
+                {
+                    Id = userDto.Id,
+                    Email = userDto.Email,
+                    FullName = userDto.FullName,
+                    Roles = roles
+                };
+                
+                // Create response with tokens and expiresIn (seconds)
+                var loginResponse = new LoginResponseDto
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken, // Will be removed for web clients in controller
+                    ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60, // Convert to seconds
+                    User = userSummary
+                };
+                
+                return new ServiceResponse<LoginResponseDto>(loginResponse);
             }
             catch (Exception ex)
             {
@@ -130,6 +184,117 @@ namespace OnlineQuiz.Services
             catch (Exception ex)
             {
                 return Task.FromResult(new ServiceResponse<string>(ex.Message));
+            }
+        }
+
+        public async Task<ServiceResponse<RefreshTokenResponseDto>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(refreshTokenDto.RefreshToken))
+                    return new ServiceResponse<RefreshTokenResponseDto>("Refresh token is required");
+
+                // Find the refresh token in database
+                var refreshTokenEntity = await _context.RefreshTokens
+                    .Include(rt => rt.User)
+                        .ThenInclude(u => u.UserRoles)
+                            .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
+
+                if (refreshTokenEntity == null || !refreshTokenEntity.IsActive)
+                    return new ServiceResponse<RefreshTokenResponseDto>("Invalid or expired refresh token");
+
+                var user = refreshTokenEntity.User;
+                var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
+                var roles = user.UserRoles?.Select(ur => ur.Role.Name).ToList() ??[];
+
+                // Generate new access token
+                var newAccessToken = JwtTokenHelper.GenerateToken(user, roles, jwtSettings);
+                var newRefreshToken = JwtTokenHelper.GenerateRefreshToken();
+
+                // Revoke old refresh token
+                refreshTokenEntity.RevokedAt = DateTime.UtcNow;
+
+                // Create new refresh token
+                var newRefreshTokenEntity = new RefreshTokenModel
+                {
+                    Token = newRefreshToken,
+                    UserId = (int)user.UserId,
+                    ExpiresAt = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpirationInDays),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.RefreshTokens.Add(newRefreshTokenEntity);
+                await _context.SaveChangesAsync();
+
+                var response = new RefreshTokenResponseDto
+                {
+                    AccessToken = newAccessToken,
+                    RefreshToken = newRefreshToken, // Will be removed for web clients in controller
+                    ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60 // Convert to seconds
+                };
+
+                return new ServiceResponse<RefreshTokenResponseDto>(response);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<RefreshTokenResponseDto>(ex.Message);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> GenerateRefreshTokenAsync(UserModel user)
+        {
+            try
+            {
+                if (user == null)
+                    return new ServiceResponse<string>("User is required");
+
+                var refreshToken = JwtTokenHelper.GenerateRefreshToken();
+                var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
+
+                var refreshTokenEntity = new RefreshTokenModel
+                {
+                    Token = refreshToken,
+                    UserId = (int)user.UserId,
+                    ExpiresAt = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpirationInDays),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.RefreshTokens.Add(refreshTokenEntity);
+                await _context.SaveChangesAsync();
+
+                return new ServiceResponse<string>(refreshToken);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(ex.Message);
+            }
+        }
+
+        public async Task<ServiceResponse> RevokeRefreshTokenAsync(string refreshToken)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                    return new ServiceResponse("Refresh token is required");
+
+                var refreshTokenEntity = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+
+                if (refreshTokenEntity == null)
+                    return new ServiceResponse("Refresh token not found");
+
+                if (refreshTokenEntity.IsRevoked)
+                    return new ServiceResponse("Refresh token already revoked");
+
+                refreshTokenEntity.RevokedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                return new ServiceResponse();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse(ex.Message);
             }
         }
 

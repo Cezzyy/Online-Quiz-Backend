@@ -23,7 +23,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         // Configure JSON serialization for consistent API responses
-        options.JsonSerializerOptions.PropertyNamingPolicy = null; // Keep PascalCase
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase; // Use camelCase
         options.JsonSerializerOptions.WriteIndented = true; // Pretty print in development
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
@@ -40,7 +40,8 @@ var jwtSettings = new JwtSettings
     SecretKey = Environment.GetEnvironmentVariable("JwtSettings__SecretKey") ?? "",
     Issuer = Environment.GetEnvironmentVariable("JwtSettings__Issuer") ?? "OnlineQuizAPI",
     Audience = Environment.GetEnvironmentVariable("JwtSettings__Audience") ?? "OnlineQuizUsers",
-    ExpirationInMinutes = int.TryParse(Environment.GetEnvironmentVariable("JwtSettings__ExpirationInMinutes"), out var expiration) ? expiration : 1440
+    AccessTokenExpirationInMinutes = int.TryParse(Environment.GetEnvironmentVariable("JwtSettings__AccessTokenExpirationInMinutes"), out var accessExpiration) ? accessExpiration : 15,
+    RefreshTokenExpirationInDays = int.TryParse(Environment.GetEnvironmentVariable("JwtSettings__RefreshTokenExpirationInDays"), out var refreshExpiration) ? refreshExpiration : 7
 };
 
 // Validate JWT settings
@@ -54,7 +55,8 @@ builder.Services.Configure<JwtSettings>(options =>
     options.SecretKey = jwtSettings.SecretKey;
     options.Issuer = jwtSettings.Issuer;
     options.Audience = jwtSettings.Audience;
-    options.ExpirationInMinutes = jwtSettings.ExpirationInMinutes;
+    options.AccessTokenExpirationInMinutes = jwtSettings.AccessTokenExpirationInMinutes;
+    options.RefreshTokenExpirationInDays = jwtSettings.RefreshTokenExpirationInDays;
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

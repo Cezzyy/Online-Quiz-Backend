@@ -172,10 +172,20 @@ namespace OnlineQuiz.Class
                 var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? [];
                 
                 var token = JwtTokenHelper.GenerateToken(user, roles, _jwtSettings);
+                var userDto = _mapper.Map<UserDto>(user);
+                var userSummary = new UserSummaryDto
+                {
+                    Id = userDto.UserId,
+                    Email = userDto.Email,
+                    FullName = userDto.FullName,
+                    Roles = roles.ToList()
+                };
+                
                 var loginResponse = new LoginResponseDto
                 {
-                    Token = token,
-                    User = _mapper.Map<UserDto>(user)
+                    AccessToken = token,
+                    ExpiresIn = _jwtSettings.AccessTokenExpirationInMinutes * 60, // Convert to seconds
+                    User = userSummary
                 };
 
                 return new ServiceResponse<LoginResponseDto>(loginResponse);
