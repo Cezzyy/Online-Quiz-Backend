@@ -12,10 +12,12 @@ namespace OnlineQuiz.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAuthService _authService;
 
-        public AuthController(IUserService userService)
+        public AuthController(IUserService userService, IAuthService authService)
         {
             _userService = userService;
+            _authService = authService;
         }
 
         /// <summary>
@@ -26,7 +28,7 @@ namespace OnlineQuiz.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponseDto>> Login(LoginDto loginDto)
         {
-            var response = await _userService.AuthenticateAsync(loginDto);
+            var response = await _authService.AuthenticateAsync(loginDto);
             if (response == null || !response.Success || response.Data == null)
             {
                 return Unauthorized(response?.Message ?? "Invalid email or password");
@@ -156,78 +158,7 @@ namespace OnlineQuiz.Controllers
             }
         }
 
-        /// <summary>
-        /// Refresh JWT token (if user has valid token)
-        /// </summary>
-        /// <returns>New JWT token</returns>
-        [HttpPost("refresh")]
-        [Authorize]
-        public async Task<IActionResult> RefreshToken()
-        {
-            try
-            {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var email = User.FindFirst(ClaimTypes.Email)?.Value;
-                
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email))
-                {
-                    return Unauthorized(new { message = "Invalid token: User information not found" });
-                }
 
-                // Get user by ID to verify user still exists and is active
-                var userResponse = await _userService.GetUserByIdAsync(long.Parse(userId));
-                if (!userResponse.Success || userResponse.Data == null)
-                {
-                    return Unauthorized(new { message = "User not found or inactive" });
-                }
-
-                // Generate a new token for the authenticated user
-                var tokenResponse = await _userService.GenerateJwtTokenAsync(userResponse.Data);
-                if (!tokenResponse.Success || string.IsNullOrEmpty(tokenResponse.Data))
-                {
-                    return BadRequest(new { message = "Failed to generate new token" });
-                }
-
-                // Set new JWT cookie for web clients
-                var userAgent = Request.Headers.UserAgent.ToString().ToLower();
-                var clientType = Request.Headers["X-Client-Type"].ToString().ToLower();
-                
-                if (clientType == "web" || userAgent.Contains("mozilla"))
-                {
-                    var cookieOptions = new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = Request.IsHttps,
-                        SameSite = SameSiteMode.Lax,
-                        Expires = DateTime.UtcNow.AddHours(24),
-                        Path = "/"
-                    };
-                    
-                    Response.Cookies.Append("jwt", tokenResponse.Data, cookieOptions);
-                }
-                
-                return Ok(new 
-                {
-                    message = "Token refreshed successfully",
-                    token = tokenResponse.Data,
-                    user = new 
-                    {
-                        id = userId,
-                        email,
-                        name = User.FindFirst(ClaimTypes.Name)?.Value,
-                        roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
-                    },
-                    timestamp = DateTime.UtcNow
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { 
-                    message = "Token refresh failed",
-                    error = ex.Message 
-                });
-            }
-        }
 
     }
 }

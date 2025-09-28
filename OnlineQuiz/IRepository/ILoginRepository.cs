@@ -9,7 +9,7 @@ namespace OnlineQuiz.IRepository
         Task<ServiceResponse<LoginResponseDto>> AuthenticateAsync(LoginDto loginDto);
         Task<ServiceResponse<UserModel>> ValidateUserCredentialsAsync(string email, string password);
         Task<ServiceResponse> LogoutAsync(long userId);
-        Task<ServiceResponse> RefreshTokenAsync(string refreshToken);
+
 
     }
 }

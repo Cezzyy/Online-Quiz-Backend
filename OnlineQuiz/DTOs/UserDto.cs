@@ -10,7 +10,7 @@ namespace OnlineQuiz.DTOs
         public string? EmergencyContactNumber { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public List<string> Roles { get; set; } = new List<string>();
+        public List<string> Roles { get; set; } = [];
     }
 
     public class CreateUserDto
@@ -20,7 +20,16 @@ namespace OnlineQuiz.DTOs
         public string FullName { get; set; } = string.Empty;
         public string? ContactNumber { get; set; }
         public string? EmergencyContactNumber { get; set; }
-        public List<string> Roles { get; set; } = new List<string>();
+        public List<string> Roles { get; set; } = [];
+        
+        // Teacher-specific information (optional, only used if Teacher role is assigned)
+        public string? Department { get; set; }
+        
+        // Student-specific information (optional, only used if Student role is assigned)
+        public string? StudentNumber { get; set; }
+        public int? YearLevel { get; set; }
+        public string? Section { get; set; }
+        public string? Course { get; set; }
     }
 
     public class UpdateUserDto
@@ -41,6 +50,36 @@ namespace OnlineQuiz.DTOs
     {
         public string Token { get; set; } = string.Empty;
         public UserDto User { get; set; } = null!;
+    }
+
+    public class TeacherDto
+    {
+        public long UserId { get; set; }
+        public string? Department { get; set; }
+        public UserDto User { get; set; } = null!;
+    }
+
+    public class StudentDto
+    {
+        public long UserId { get; set; }
+        public string StudentNumber { get; set; } = string.Empty;
+        public int? YearLevel { get; set; }
+        public string? Section { get; set; }
+        public string? Course { get; set; }
+        public UserDto User { get; set; } = null!;
+    }
+
+    public class CreateTeacherDto
+    {
+        public string? Department { get; set; }
+    }
+
+    public class CreateStudentDto
+    {
+        public string StudentNumber { get; set; } = string.Empty;
+        public int? YearLevel { get; set; }
+        public string? Section { get; set; }
+        public string? Course { get; set; }
     }
 
 

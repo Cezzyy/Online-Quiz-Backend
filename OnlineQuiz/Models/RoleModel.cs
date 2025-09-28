@@ -12,6 +12,6 @@ namespace OnlineQuiz.Models
         public string Name { get; set; } = string.Empty;
         
         // Navigation properties
-        public virtual ICollection<UserRoleModel> UserRoles { get; set; } = new List<UserRoleModel>();
+        public virtual ICollection<UserRoleModel> UserRoles { get; set; } = [];
     }
 }

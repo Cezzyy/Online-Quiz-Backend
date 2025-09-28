@@ -43,7 +43,7 @@ namespace OnlineQuiz.Class
                     return new ServiceResponse<LoginResponseDto>("Account is not active");
 
                 // Get user roles
-                var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? new List<string>();
+                var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? [];
                 
                 var token = JwtTokenHelper.GenerateToken(user, roles, _jwtSettings);
                 var loginResponse = new LoginResponseDto
@@ -90,8 +90,6 @@ namespace OnlineQuiz.Class
         {
             try
             {
-                // In a real implementation, you might want to blacklist the token
-                // or update a last logout timestamp
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                     return new ServiceResponse("User not found");
@@ -107,30 +105,5 @@ namespace OnlineQuiz.Class
                 return new ServiceResponse(ex.Message);
             }
         }
-
-        public Task<ServiceResponse> RefreshTokenAsync(string refreshToken)
-        {
-            try
-            {
-                // Validate refresh token
-                if (string.IsNullOrWhiteSpace(refreshToken))
-                    return Task.FromResult(new ServiceResponse("Refresh token is required"));
-
-                // In a production system, you would:
-                // 1. Validate the refresh token against stored tokens in database
-                // 2. Check if the token is not expired
-                // 3. Generate a new access token
-                // 4. Optionally rotate the refresh token
-
-                // For now, we'll return a placeholder response
-                return Task.FromResult(new ServiceResponse("Token refresh completed successfully"));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromResult(new ServiceResponse($"Token refresh failed: {ex.Message}"));
-            }
-        }
-
-
     }
 }

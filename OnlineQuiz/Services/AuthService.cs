@@ -13,13 +13,11 @@ namespace OnlineQuiz.Services
     public class AuthService : IAuthService
     {
         private readonly ILoginRepository _loginRepository;
-        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
 
-        public AuthService(ILoginRepository loginRepository, IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(ILoginRepository loginRepository, IConfiguration configuration)
         {
             _loginRepository = loginRepository;
-            _userRepository = userRepository;
             _configuration = configuration;
         }
 
@@ -42,8 +40,11 @@ namespace OnlineQuiz.Services
 
                 // Authenticate user
                 var authResult = await _loginRepository.AuthenticateAsync(loginDto);
-                if (!authResult.Success)
-                    return new ServiceResponse<LoginResponseDto>(authResult.Message);
+                if (authResult is null || !authResult.Success)
+                {
+                    var msg = authResult?.Message ?? "Invalid email or password";
+                    return new ServiceResponse<LoginResponseDto>(msg);
+                }
 
                 return authResult;
             }
@@ -89,48 +90,6 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public async Task<ServiceResponse> RefreshTokenAsync(string refreshToken)
-        {
-            try
-            {
-                // For now, we'll use the existing token validation approach
-                // In a production system, you'd want to store refresh tokens in the database
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:SecretKey"] ?? "");
-                
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = true,
-                    ValidIssuer = _configuration["JwtSettings:Issuer"],
-                    ValidateAudience = true,
-                    ValidAudience = _configuration["JwtSettings:Audience"],
-                    ValidateLifetime = false, // We'll validate this manually
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                var principal = tokenHandler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
-                var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                
-                if (string.IsNullOrEmpty(userId))
-                    return new ServiceResponse("Invalid refresh token");
-
-                // Get user and generate new token
-                var userResponse = await _userRepository.GetUserByIdAsync(long.Parse(userId));
-                if (!userResponse.Success || userResponse.Data == null)
-                    return new ServiceResponse("User not found");
-
-                return new ServiceResponse("Token refresh completed successfully");
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse($"Token refresh failed: {ex.Message}");
-            }
-        }
-
-
-
         public Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserModel user)
         {
             try
@@ -150,13 +109,12 @@ namespace OnlineQuiz.Services
                 var key = Encoding.ASCII.GetBytes(secretKey);
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
-                    Subject = new ClaimsIdentity(new[]
-                    {
+                    Subject = new ClaimsIdentity([
                         new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                         new Claim(ClaimTypes.Email, user.Email ?? ""),
                         new Claim(ClaimTypes.Name, user.FullName ?? ""),
-                        new Claim("userId", user.UserId.ToString())
-                    }),
+                        new Claim("userId", user.UserId.ToString()),
+                    ]),
                     Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
                     Issuer = issuer,
                     Audience = audience,
@@ -177,9 +135,7 @@ namespace OnlineQuiz.Services
 
         #region Private Helper Methods
 
-
-
-        private bool IsValidEmail(string email)
+        private static bool IsValidEmail(string email)
         {
             try
             {
@@ -191,19 +147,6 @@ namespace OnlineQuiz.Services
                 return false;
             }
         }
-
-        private bool IsValidPassword(string password)
-        {
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
-                return false;
-
-            bool hasUpper = password.Any(char.IsUpper);
-            bool hasLower = password.Any(char.IsLower);
-            bool hasDigit = password.Any(char.IsDigit);
-
-            return hasUpper && hasLower && hasDigit;
-        }
-
         #endregion
     }
 }

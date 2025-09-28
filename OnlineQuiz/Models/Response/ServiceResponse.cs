@@ -3,22 +3,33 @@ namespace OnlineQuiz.Models.Response
     public class ServiceResponse<T>
     {
         public bool Success { get; set; } = true;
-        public string Message { get; set; } = string.Empty;
+        public string? Message { get; set; } = string.Empty;
         public T? Data { get; set; }
-        public List<string> Errors { get; set; } = new List<string>();
+        public List<string> Errors { get; set; } = [];
 
         public ServiceResponse() { }
 
-        public ServiceResponse(T data)
+        public ServiceResponse(T? data)  // allow null payloads
         {
             Data = data;
+            Success = true;
         }
 
         public ServiceResponse(string errorMessage)
         {
             Success = false;
             Message = errorMessage;
-            Data = default(T);
+            Data = default;
+        }
+
+        public static ServiceResponse<T> Fail(string? message = null)
+        {
+            return new ServiceResponse<T>
+            {
+                Success = false,
+                Message = message,
+                Data = default
+            };
         }
     }
 
@@ -26,7 +37,7 @@ namespace OnlineQuiz.Models.Response
     {
         public bool Success { get; set; } = true;
         public string Message { get; set; } = string.Empty;
-        public List<string> Errors { get; set; } = new List<string>();
+        public List<string> Errors { get; set; } = [];
 
         public ServiceResponse() { }
 

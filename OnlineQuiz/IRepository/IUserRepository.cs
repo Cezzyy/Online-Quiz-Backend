@@ -12,11 +12,8 @@ namespace OnlineQuiz.IRepository
         Task<ServiceResponse<UserDto>> CreateUserAsync(CreateUserDto createUserDto);
         Task<ServiceResponse<UserDto>> UpdateUserAsync(long userId, UpdateUserDto updateUserDto);
         Task<ServiceResponse> DeleteUserAsync(long userId);
-        Task<ServiceResponse<LoginResponseDto>> LoginAsync(LoginDto loginDto);
-
-        Task<ServiceResponse> AssignRoleAsync(long userId, short roleId);
-        Task<ServiceResponse> RemoveRoleAsync(long userId, short roleId);
-        Task<ServiceResponse<IEnumerable<RoleModel>>> GetUserRolesAsync(long userId);
-        Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(short roleId);
+        Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(string roleName);
+        Task<ServiceResponse<IEnumerable<TeacherDto>>> GetAllTeachersWithProfileAsync();
+        Task<ServiceResponse<IEnumerable<StudentDto>>> GetAllStudentsWithProfileAsync();
     }
 }

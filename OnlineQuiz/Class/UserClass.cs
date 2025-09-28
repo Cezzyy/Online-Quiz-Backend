@@ -169,7 +169,7 @@ namespace OnlineQuiz.Class
                     return new ServiceResponse<LoginResponseDto>("Account is not active");
 
                 // Get user roles
-                var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? new List<string>();
+                var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? [];
                 
                 var token = JwtTokenHelper.GenerateToken(user, roles, _jwtSettings);
                 var loginResponse = new LoginResponseDto
@@ -248,13 +248,19 @@ namespace OnlineQuiz.Class
             }
         }
 
-        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(short roleId)
+        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(string roleName)
         {
             try
             {
+                // Validate that only Student or Teacher roles are allowed
+                if (roleName != "Student" && roleName != "Teacher")
+                    return new ServiceResponse<IEnumerable<UserDto>>("Only 'Student' or 'Teacher' roles are allowed");
+
                 var users = await _context.UserRoles
-                    .Where(ur => ur.RoleId == roleId)
+                    .Where(ur => ur.Role.Name == roleName)
                     .Include(ur => ur.User)
+                    .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
                     .Select(ur => ur.User)
                     .ToListAsync();
 
@@ -266,5 +272,44 @@ namespace OnlineQuiz.Class
                 return new ServiceResponse<IEnumerable<UserDto>>(ex.Message);
             }
         }
+
+        public async Task<ServiceResponse<IEnumerable<TeacherDto>>> GetAllTeachersWithProfileAsync()
+        {
+            try
+            {
+                var teachers = await _context.Teachers
+                    .Include(t => t.User)
+                    .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .ToListAsync();
+
+                var teacherDtos = _mapper.Map<IEnumerable<TeacherDto>>(teachers);
+                return new ServiceResponse<IEnumerable<TeacherDto>>(teacherDtos);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<TeacherDto>>(ex.Message);
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<StudentDto>>> GetAllStudentsWithProfileAsync()
+        {
+            try
+            {
+                var students = await _context.Students
+                    .Include(s => s.User)
+                    .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .ToListAsync();
+
+                var studentDtos = _mapper.Map<IEnumerable<StudentDto>>(students);
+                return new ServiceResponse<IEnumerable<StudentDto>>(studentDtos);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<StudentDto>>(ex.Message);
+            }
+        }
+
     }
 }

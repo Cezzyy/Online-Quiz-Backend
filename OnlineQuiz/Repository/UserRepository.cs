@@ -163,7 +163,7 @@ namespace OnlineQuiz.Repository
                 await _context.SaveChangesAsync();
 
                 // Assign roles if provided
-                if (createUserDto.Roles.Any())
+                if (createUserDto.Roles.Count > 0)
                 {
                     foreach (var roleName in createUserDto.Roles)
                     {
@@ -176,6 +176,53 @@ namespace OnlineQuiz.Repository
                                 RoleId = role.RoleId
                             };
                             _context.UserRoles.Add(userRole);
+
+                            // Create Teacher or Student record based on role
+                            if (roleName == "Teacher")
+                            {
+                                var teacher = new TeacherModel
+                                {
+                                    UserId = user.UserId,
+                                    Department = createUserDto.Department
+                                };
+                                _context.Teachers.Add(teacher);
+                            }
+                            else if (roleName == "Student")
+                            {
+                                // Generate student number if not provided
+                                var studentNumber = createUserDto.StudentNumber;
+                                if (string.IsNullOrEmpty(studentNumber))
+                                {
+                                    // Generate a unique student number (format: YYYY-XXXXXX)
+                                    var year = DateTime.Now.Year;
+                                    var lastStudent = await _context.Students
+                                        .Where(s => s.StudentNumber.StartsWith(year.ToString()))
+                                        .OrderByDescending(s => s.StudentNumber)
+                                        .FirstOrDefaultAsync();
+                                    
+                                    int nextNumber = 1;
+                                    if (lastStudent != null && lastStudent.StudentNumber.Length >= 9)
+                                    {
+                                        var lastNumberPart = lastStudent.StudentNumber[5..];
+                                        if (int.TryParse(lastNumberPart, out int lastNum))
+                                        {
+                                            nextNumber = lastNum + 1;
+                                        }
+                                    }
+                                    
+                                    studentNumber = $"{year}-{nextNumber:D6}";
+                                }
+
+                                var student = new StudentModel
+                                {
+                                    UserId = user.UserId,
+                                    StudentNumber = studentNumber,
+                                    YearLevel = createUserDto.YearLevel,
+                                    Section = createUserDto.Section,
+                                    Course = createUserDto.Course
+                                };
+                                _context.Students.Add(student);
+                            }
                         }
                     }
                     await _context.SaveChangesAsync();
@@ -475,12 +522,20 @@ namespace OnlineQuiz.Repository
             }
         }
 
-        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(short roleId)
+        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(string roleName)
         {
             try
             {
+                // Validate that only Student or Teacher roles are allowed
+                if (roleName != "Student" && roleName != "Teacher")
+                    return new ServiceResponse<IEnumerable<UserDto>>
+                    {
+                        Success = false,
+                        Message = "Only 'Student' or 'Teacher' roles are allowed"
+                    };
+
                 var users = await _context.UserRoles
-                    .Where(ur => ur.RoleId == roleId)
+                    .Where(ur => ur.Role.Name == roleName)
                     .Include(ur => ur.User)
                     .ThenInclude(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
@@ -502,6 +557,64 @@ namespace OnlineQuiz.Repository
                 {
                     Success = false,
                     Message = $"Error retrieving users by role: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<TeacherDto>>> GetAllTeachersWithProfileAsync()
+        {
+            try
+            {
+                var teachers = await _context.Teachers
+                    .Include(t => t.User)
+                    .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .ToListAsync();
+
+                var teacherDtos = _mapper.Map<IEnumerable<TeacherDto>>(teachers);
+
+                return new ServiceResponse<IEnumerable<TeacherDto>>
+                {
+                    Success = true,
+                    Data = teacherDtos,
+                    Message = "Teachers with complete profile information retrieved successfully"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<TeacherDto>>
+                {
+                    Success = false,
+                    Message = $"Error retrieving teachers: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<StudentDto>>> GetAllStudentsWithProfileAsync()
+        {
+            try
+            {
+                var students = await _context.Students
+                    .Include(s => s.User)
+                    .ThenInclude(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .ToListAsync();
+
+                var studentDtos = _mapper.Map<IEnumerable<StudentDto>>(students);
+
+                return new ServiceResponse<IEnumerable<StudentDto>>
+                {
+                    Success = true,
+                    Data = studentDtos,
+                    Message = "Students with complete profile information retrieved successfully"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<StudentDto>>
+                {
+                    Success = false,
+                    Message = $"Error retrieving students: {ex.Message}"
                 };
             }
         }

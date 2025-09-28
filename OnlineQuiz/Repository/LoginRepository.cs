@@ -127,15 +127,6 @@ namespace OnlineQuiz.Repository
         {
             try
             {
-                // In a stateless JWT system, logout is typically handled client-side
-                // However, you could implement token blacklisting here if needed
-                
-                // For now, we'll just return success
-                // In a production system, you might want to:
-                // 1. Add the token to a blacklist
-                // 2. Update user's last logout time
-                // 3. Invalidate refresh tokens
-
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                 {
@@ -165,35 +156,5 @@ namespace OnlineQuiz.Repository
                 };
             }
         }
-
-        public async Task<ServiceResponse> RefreshTokenAsync(string refreshToken)
-        {
-            try
-            {
-                // This is a placeholder implementation
-                // In a production system, you would:
-                // 1. Validate the refresh token
-                // 2. Check if it's not expired
-                // 3. Generate a new access token
-                // 4. Optionally rotate the refresh token
-
-                // For now, return not implemented
-                return new ServiceResponse
-                {
-                    Success = false,
-                    Message = "Refresh token functionality not implemented yet"
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse
-                {
-                    Success = false,
-                    Message = $"Error refreshing token: {ex.Message}"
-                };
-            }
-        }
-
-
     }
 }

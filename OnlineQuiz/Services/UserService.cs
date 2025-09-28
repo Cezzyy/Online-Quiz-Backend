@@ -140,102 +140,13 @@ namespace OnlineQuiz.Services
 
 
 
-        public async Task<ServiceResponse> AssignRoleAsync(long userId, string roleName)
-        {
-            try
-            {
-                if (userId <= 0)
-                    return new ServiceResponse("Invalid user ID");
 
-                if (string.IsNullOrWhiteSpace(roleName))
-                    return new ServiceResponse("Invalid role name");
 
-                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-                if (role == null)
-                    return new ServiceResponse("Role not found");
 
-                return await _userRepository.AssignRoleAsync(userId, role.RoleId);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse> RemoveRoleAsync(long userId, string roleName)
-        {
-            try
-            {
-                if (userId <= 0)
-                    return new ServiceResponse("Invalid user ID");
-
-                if (string.IsNullOrWhiteSpace(roleName))
-                    return new ServiceResponse("Invalid role name");
-
-                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-                if (role == null)
-                    return new ServiceResponse("Role not found");
-
-                return await _userRepository.RemoveRoleAsync(userId, role.RoleId);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse<IEnumerable<RoleModel>>> GetUserRolesAsync(long userId)
-        {
-            try
-            {
-                if (userId <= 0)
-                    return new ServiceResponse<IEnumerable<RoleModel>>("Invalid user ID");
-
-                return await _userRepository.GetUserRolesAsync(userId);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<IEnumerable<RoleModel>>(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse<bool>> IsEmailAvailableAsync(string email)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(email))
-                    return new ServiceResponse<bool>("Email is required");
-
-                if (!IsValidEmail(email))
-                    return new ServiceResponse<bool>("Invalid email format");
-
-                var existingUser = await _userRepository.GetUserByEmailAsync(email);
-                return new ServiceResponse<bool>(!existingUser.Success || existingUser.Data == null);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<bool>(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse<UserDto>> GetUserProfileAsync(long userId)
-        {
-            try
-            {
-                if (userId <= 0)
-                    return new ServiceResponse<UserDto>("Invalid user ID");
-
-                return await _userRepository.GetUserByIdAsync(userId);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<UserDto>(ex.Message);
-            }
-        }
 
         #region Private Helper Methods
 
-        private ServiceResponse ValidateCreateUserDto(CreateUserDto createUserDto)
+        private static ServiceResponse ValidateCreateUserDto(CreateUserDto createUserDto)
         {
             if (createUserDto == null)
                 return new ServiceResponse("User data is required");
@@ -255,10 +166,42 @@ namespace OnlineQuiz.Services
             if (createUserDto.FullName.Length > 60)
                 return new ServiceResponse("Full name cannot exceed 60 characters");
 
+            // Validate roles
+            if (createUserDto.Roles == null || createUserDto.Roles.Count == 0)
+                return new ServiceResponse("At least one role must be assigned");
+
+            var validRoles = new[] { "Admin", "Teacher", "Student" };
+            var invalidRoles = createUserDto.Roles.Where(role => !validRoles.Contains(role)).ToList();
+            if (invalidRoles.Count > 0)
+                return new ServiceResponse($"Invalid roles: {string.Join(", ", invalidRoles)}. Valid roles are: Admin, Teacher, Student");
+
+            // Validate Teacher-specific fields
+            if (createUserDto.Roles.Contains("Teacher"))
+            {
+                if (!string.IsNullOrWhiteSpace(createUserDto.Department) && createUserDto.Department.Length > 120)
+                    return new ServiceResponse("Department cannot exceed 120 characters");
+            }
+
+            // Validate Student-specific fields
+            if (createUserDto.Roles.Contains("Student"))
+            {
+                if (!string.IsNullOrWhiteSpace(createUserDto.StudentNumber) && createUserDto.StudentNumber.Length > 25)
+                    return new ServiceResponse("Student number cannot exceed 25 characters");
+
+                if (createUserDto.YearLevel.HasValue && (createUserDto.YearLevel < 1 || createUserDto.YearLevel > 6))
+                    return new ServiceResponse("Year level must be between 1 and 6");
+
+                if (!string.IsNullOrWhiteSpace(createUserDto.Section) && createUserDto.Section.Length > 60)
+                    return new ServiceResponse("Section cannot exceed 60 characters");
+
+                if (!string.IsNullOrWhiteSpace(createUserDto.Course) && createUserDto.Course.Length > 120)
+                    return new ServiceResponse("Course cannot exceed 120 characters");
+            }
+
             return new ServiceResponse();
         }
 
-        private ServiceResponse ValidateUpdateUserDto(UpdateUserDto updateUserDto)
+        private static ServiceResponse ValidateUpdateUserDto(UpdateUserDto updateUserDto)
         {
             if (updateUserDto == null)
                 return new ServiceResponse("User data is required");
@@ -275,7 +218,7 @@ namespace OnlineQuiz.Services
             return new ServiceResponse();
         }
 
-        private bool IsValidEmail(string email)
+        private static bool IsValidEmail(string email)
         {
             try
             {
@@ -288,7 +231,7 @@ namespace OnlineQuiz.Services
             }
         }
 
-        private bool IsValidPassword(string password)
+        private static bool IsValidPassword(string password)
         {
             if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
                 return false;
@@ -302,58 +245,52 @@ namespace OnlineQuiz.Services
 
         #endregion
 
-        public async Task<ServiceResponse<IEnumerable<UserDto>>> GetUsersByRoleAsync(string roleName)
+        public async Task<ServiceResponse<object>> GetUsersByRoleAsync(string roleName)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(roleName))
-                    return new ServiceResponse<IEnumerable<UserDto>>("Invalid role name");
+                    return new ServiceResponse<object>("Role name is required");
 
-                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-                if (role == null)
-                    return new ServiceResponse<IEnumerable<UserDto>>("Role not found");
+                // Validate that only Student, Teacher, or Admin roles are allowed
+                if (roleName != "Student" && roleName != "Teacher" && roleName != "Admin")
+                    return new ServiceResponse<object>("Only 'Student', 'Teacher', or 'Admin' roles are allowed");
 
-                return await _userRepository.GetUsersByRoleAsync(role.RoleId);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<IEnumerable<UserDto>>(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse<LoginResponseDto>> AuthenticateAsync(LoginDto loginDto)
-        {
-            try
-            {
-                // Delegate to AuthService for authentication
-                return await _authService.AuthenticateAsync(loginDto);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<LoginResponseDto>(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserDto user)
-        {
-            try
-            {
-                // Convert UserDto to UserModel for token generation
-                var userModel = new UserModel
+                // Return appropriate DTO based on role
+                if (roleName.Equals("Teacher", StringComparison.OrdinalIgnoreCase))
                 {
-                    UserId = user.UserId,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    Status = user.Status
-                };
-
-                // Delegate to AuthService for token generation
-                return await _authService.GenerateJwtTokenAsync(userModel);
+                    var teacherResult = await _userRepository.GetAllTeachersWithProfileAsync();
+                    if (teacherResult is null || !teacherResult.Success || teacherResult.Data is null)
+                    {
+                        return ServiceResponse<object>.Fail("No teachers found or lookup failed.");
+                    }
+                    return new ServiceResponse<object>(teacherResult.Data);
+                }
+                else if (roleName.Equals("Student", StringComparison.OrdinalIgnoreCase))
+                {
+                    var studentResult = await _userRepository.GetAllStudentsWithProfileAsync();
+                    if (studentResult is null || !studentResult.Success || studentResult.Data is null)
+                    {
+                        return ServiceResponse<object>.Fail("No students found or lookup failed.");
+                    }
+                    return new ServiceResponse<object>(studentResult.Data);
+                }
+                else // Admin role
+                {
+                    var userResult = await _userRepository.GetUsersByRoleAsync(roleName);
+                    if (userResult is null || !userResult.Success || userResult.Data is null)
+                    {
+                        return ServiceResponse<object>.Fail("No admin users found or lookup failed.");
+                    }
+                    return new ServiceResponse<object>(userResult.Data);
+                }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(ex.Message);
+                return new ServiceResponse<object>(ex.Message);
             }
         }
+
+
     }
 }
