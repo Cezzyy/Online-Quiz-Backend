@@ -350,49 +350,7 @@ namespace OnlineQuiz.Repository
             }
         }
 
-        public async Task<ServiceResponse> ChangePasswordAsync(long userId, string currentPassword, string newPassword)
-        {
-            try
-            {
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null)
-                {
-                    return new ServiceResponse
-                    {
-                        Success = false,
-                        Message = "User not found"
-                    };
-                }
 
-                if (!PasswordHelper.VerifyPassword(currentPassword, user.PasswordHash))
-                {
-                    return new ServiceResponse
-                    {
-                        Success = false,
-                        Message = "Current password is incorrect"
-                    };
-                }
-
-                user.PasswordHash = PasswordHelper.HashPassword(newPassword);
-                user.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-
-                return new ServiceResponse
-                {
-                    Success = true,
-                    Message = "Password changed successfully"
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse
-                {
-                    Success = false,
-                    Message = $"Error changing password: {ex.Message}"
-                };
-            }
-        }
 
         public async Task<ServiceResponse> AssignRoleAsync(long userId, short roleId)
         {

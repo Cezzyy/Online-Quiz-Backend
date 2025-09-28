@@ -12,7 +12,6 @@ namespace OnlineQuiz.IServices
         Task<ServiceResponse<UserDto>> CreateUserAsync(CreateUserDto createUserDto);
         Task<ServiceResponse<UserDto>> UpdateUserAsync(long userId, UpdateUserDto updateUserDto);
         Task<ServiceResponse> DeleteUserAsync(long userId);
-        Task<ServiceResponse> ChangePasswordAsync(long userId, string currentPassword, string newPassword);
         Task<ServiceResponse> AssignRoleAsync(long userId, string roleName);
         Task<ServiceResponse> RemoveRoleAsync(long userId, string roleName);
         Task<ServiceResponse<IEnumerable<RoleModel>>> GetUserRolesAsync(long userId);
@@ -20,11 +19,6 @@ namespace OnlineQuiz.IServices
         Task<ServiceResponse<bool>> IsEmailAvailableAsync(string email);
         Task<ServiceResponse<UserDto>> GetUserProfileAsync(long userId);
         Task<ServiceResponse<LoginResponseDto>> AuthenticateAsync(LoginDto loginDto);
-        Task<ServiceResponse<LoginResponseDto>> RegisterAsync(CreateUserDto createUserDto);
         Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserDto user);
-        Task<ServiceResponse> ResetPasswordAsync(string email);
-        Task<ServiceResponse> ConfirmPasswordResetAsync(string token, string newPassword);
-        Task<ServiceResponse> VerifyEmailAsync(string token);
-        Task<ServiceResponse> ResendVerificationEmailAsync(string email);
     }
 }

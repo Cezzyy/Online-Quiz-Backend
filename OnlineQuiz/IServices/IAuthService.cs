@@ -10,11 +10,7 @@ namespace OnlineQuiz.IServices
         Task<ServiceResponse<UserModel>> ValidateUserCredentialsAsync(string email, string password);
         Task<ServiceResponse> LogoutAsync(long userId);
         Task<ServiceResponse> RefreshTokenAsync(string refreshToken);
-        Task<ServiceResponse> ResetPasswordAsync(string email);
-        Task<ServiceResponse> ConfirmPasswordResetAsync(string token, string newPassword);
-        Task<ServiceResponse> VerifyEmailAsync(string token);
-        Task<ServiceResponse> ResendVerificationEmailAsync(string email);
-        Task<ServiceResponse<LoginResponseDto>> RegisterAsync(CreateUserDto createUserDto);
+
         Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserModel user);
     }
 }

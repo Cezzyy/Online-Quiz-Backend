@@ -138,32 +138,7 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public async Task<ServiceResponse> ChangePasswordAsync(long userId, string currentPassword, string newPassword)
-        {
-            try
-            {
-                if (userId <= 0)
-                    return new ServiceResponse("Invalid user ID");
 
-                if (string.IsNullOrWhiteSpace(currentPassword))
-                    return new ServiceResponse("Current password is required");
-
-                if (string.IsNullOrWhiteSpace(newPassword))
-                    return new ServiceResponse("New password is required");
-
-                if (!IsValidPassword(newPassword))
-                    return new ServiceResponse("New password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number");
-
-                if (currentPassword == newPassword)
-                    return new ServiceResponse("New password must be different from current password");
-
-                return await _userRepository.ChangePasswordAsync(userId, currentPassword, newPassword);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
 
         public async Task<ServiceResponse> AssignRoleAsync(long userId, string roleName)
         {
@@ -359,19 +334,6 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public async Task<ServiceResponse<LoginResponseDto>> RegisterAsync(CreateUserDto createUserDto)
-        {
-            try
-            {
-                // Delegate to AuthService for registration
-                return await _authService.RegisterAsync(createUserDto);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<LoginResponseDto>(ex.Message);
-            }
-        }
-
         public async Task<ServiceResponse<string>> GenerateJwtTokenAsync(UserDto user)
         {
             try
@@ -391,58 +353,6 @@ namespace OnlineQuiz.Services
             catch (Exception ex)
             {
                 return new ServiceResponse<string>(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse> ResetPasswordAsync(string email)
-        {
-            try
-            {
-                // Delegate to AuthService for password reset
-                return await _authService.ResetPasswordAsync(email);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse> ConfirmPasswordResetAsync(string token, string newPassword)
-        {
-            try
-            {
-                // Delegate to AuthService for password reset confirmation
-                return await _authService.ConfirmPasswordResetAsync(token, newPassword);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse> VerifyEmailAsync(string token)
-        {
-            try
-            {
-                // Delegate to AuthService for email verification
-                return await _authService.VerifyEmailAsync(token);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
-
-        public async Task<ServiceResponse> ResendVerificationEmailAsync(string email)
-        {
-            try
-            {
-                // Delegate to AuthService for resending verification email
-                return await _authService.ResendVerificationEmailAsync(email);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
             }
         }
     }

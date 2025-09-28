@@ -112,26 +112,6 @@ namespace OnlineQuiz.Controllers
         }
 
         /// <summary>
-        /// Change user password
-        /// </summary>
-        /// <param name="userId">User ID</param>
-        /// <param name="changePasswordDto">Current and new password</param>
-        /// <returns>Success message</returns>
-        [HttpPost("change-password/{userId}")]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword(long userId, [FromBody] ChangePasswordDto changePasswordDto)
-        {
-            var result = await _userService.ChangePasswordAsync(userId, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
-            if (!result.Success)
-            {
-                return BadRequest(result.Message);
-            }
-            return Ok(new { message = "Password changed successfully" });
-        }
-
-
-
-        /// <summary>
         /// Verify JWT token and return user information
         /// </summary>
         /// <returns>Current user information from JWT token</returns>
@@ -249,100 +229,5 @@ namespace OnlineQuiz.Controllers
             }
         }
 
-        /// <summary>
-        /// Register a new user account
-        /// </summary>
-        /// <param name="registerDto">User registration data</param>
-        /// <returns>JWT token and user information</returns>
-        [HttpPost("register")]
-        public async Task<ActionResult<LoginResponseDto>> Register(CreateUserDto registerDto)
-        {
-            var response = await _userService.RegisterAsync(registerDto);
-            if (!response.Success)
-            {
-                return BadRequest(new { message = response.Message });
-            }
-
-            // Registration successful - return success message without JWT token
-            // Users should login separately after registration
-            return Ok(new { message = response.Message });
-        }
-
-        /// <summary>
-        /// Request password reset email
-        /// </summary>
-        /// <param name="resetRequestDto">Email for password reset</param>
-        /// <returns>Success message</returns>
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto resetRequestDto)
-        {
-            var response = await _userService.ResetPasswordAsync(resetRequestDto.Email);
-            return Ok(new { message = response.Message });
-        }
-
-        /// <summary>
-        /// Reset password with token
-        /// </summary>
-        /// <param name="resetPasswordDto">Reset token and new password</param>
-        /// <returns>Success message</returns>
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
-        {
-            var response = await _userService.ConfirmPasswordResetAsync(resetPasswordDto.Token, resetPasswordDto.NewPassword);
-            if (!response.Success)
-            {
-                return BadRequest(new { message = response.Message });
-            }
-            return Ok(new { message = response.Message });
-        }
-
-        /// <summary>
-        /// Verify email address with token
-        /// </summary>
-        /// <param name="token">Email verification token</param>
-        /// <returns>Success message</returns>
-        [HttpGet("verify-email")]
-        public async Task<IActionResult> VerifyEmail([FromQuery] string token)
-        {
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return BadRequest(new { message = "Verification token is required" });
-            }
-
-            var response = await _userService.VerifyEmailAsync(token);
-            if (!response.Success)
-            {
-                return BadRequest(new { message = response.Message });
-            }
-            return Ok(new { message = response.Message });
-        }
-
-        /// <summary>
-        /// Resend email verification
-        /// </summary>
-        /// <param name="resendDto">Email to resend verification</param>
-        /// <returns>Success message</returns>
-        [HttpPost("resend-verification")]
-        public async Task<IActionResult> ResendVerification(ResendVerificationDto resendDto)
-        {
-            var response = await _userService.ResendVerificationEmailAsync(resendDto.Email);
-            return Ok(new { message = response.Message });
-        }
-    }
-
-    /// <summary>
-    /// DTO for changing password
-    /// </summary>
-    public class ChangePasswordDto
-    {
-        /// <summary>
-        /// Current password
-        /// </summary>
-        public string CurrentPassword { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// New password
-        /// </summary>
-        public string NewPassword { get; set; } = string.Empty;
     }
 }

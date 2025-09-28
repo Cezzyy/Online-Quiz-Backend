@@ -186,28 +186,7 @@ namespace OnlineQuiz.Class
             }
         }
 
-        public async Task<ServiceResponse> ChangePasswordAsync(long userId, string currentPassword, string newPassword)
-        {
-            try
-            {
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null)
-                    return new ServiceResponse("User not found");
 
-                if (!PasswordHelper.VerifyPassword(currentPassword, user.PasswordHash))
-                    return new ServiceResponse("Current password is incorrect");
-
-                user.PasswordHash = PasswordHelper.HashPassword(newPassword);
-                user.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-                return new ServiceResponse();
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse(ex.Message);
-            }
-        }
 
         public async Task<ServiceResponse> AssignRoleAsync(long userId, short roleId)
         {
