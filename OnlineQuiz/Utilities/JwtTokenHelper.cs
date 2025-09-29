@@ -55,10 +55,8 @@ namespace OnlineQuiz.Utilities
         /// <returns>Base64 encoded refresh token</returns>
         public static string GenerateRefreshToken()
         {
-            var randomBytes = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomBytes);
-            return Convert.ToBase64String(randomBytes);
+            // Use the new secure token generator
+            return RefreshTokenHasher.GenerateRefreshTokenBase64();
         }
 
         /// <summary>

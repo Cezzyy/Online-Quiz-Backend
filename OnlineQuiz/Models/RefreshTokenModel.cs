@@ -10,7 +10,8 @@ namespace OnlineQuiz.Models
         public int Id { get; set; }
 
         [Required]
-        public string Token { get; set; } = string.Empty;
+        [StringLength(64)]
+        public string TokenHash { get; set; } = string.Empty;
 
         [Required]
         public long UserId { get; set; }
