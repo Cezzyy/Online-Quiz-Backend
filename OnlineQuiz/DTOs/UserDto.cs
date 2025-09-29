@@ -59,9 +59,11 @@ namespace OnlineQuiz.DTOs
 
     public class LoginResponseDto
     {
-        public string AccessToken { get; set; } = string.Empty;
+        public string? AccessToken { get; set; } = string.Empty;
         public string? RefreshToken { get; set; } // Only for non-web clients
-        public int ExpiresIn { get; set; } // Seconds until expiration
+        public string TokenType { get; set; } = "Bearer";
+        public int ExpiresIn { get; set; } // Seconds until access token expiration
+        public int? RefreshExpiresIn { get; set; } // Seconds until refresh token expiration (mobile only)
         public UserSummaryDto User { get; set; } = null!;
     }
 
@@ -83,9 +85,11 @@ namespace OnlineQuiz.DTOs
 
     public class RefreshTokenResponseDto
     {
-        public string AccessToken { get; set; } = string.Empty;
+        public string? AccessToken { get; set; } = string.Empty;
         public string? RefreshToken { get; set; } // Only for non-web clients
-        public int ExpiresIn { get; set; } // Seconds until expiration
+        public string TokenType { get; set; } = "Bearer";
+        public int ExpiresIn { get; set; } // Seconds until access token expiration
+        public int? RefreshExpiresIn { get; set; } // Seconds until refresh token expiration (mobile only)
     }
 
     public class TeacherDto

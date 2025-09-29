@@ -96,7 +96,9 @@ namespace OnlineQuiz.Services
                 {
                     AccessToken = accessToken,
                     RefreshToken = refreshToken, // Will be removed for web clients in controller
+                    TokenType = "Bearer",
                     ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60, // Convert to seconds
+                    RefreshExpiresIn = jwtSettings.RefreshTokenExpirationInDays * 24 * 60 * 60, // Convert to seconds
                     User = userSummary
                 };
                 
@@ -129,18 +131,33 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public Task<ServiceResponse> LogoutAsync(long userId)
+        public async Task<ServiceResponse> LogoutAsync(long userId)
         {
             try
             {
                 if (userId <= 0)
-                    return Task.FromResult(new ServiceResponse("Invalid user ID"));
+                    return new ServiceResponse("Invalid user ID");
 
-                return Task.FromResult(new ServiceResponse("Logged out successfully"));
+                // Revoke all active refresh tokens for this user
+                var activeTokens = await _context.RefreshTokens
+                    .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
+                    .ToListAsync();
+
+                if (activeTokens.Any())
+                {
+                    foreach (var token in activeTokens)
+                    {
+                        token.RevokedAt = DateTime.UtcNow;
+                    }
+                    
+                    await _context.SaveChangesAsync();
+                }
+
+                return new ServiceResponse("Logged out successfully");
             }
             catch (Exception ex)
             {
-                return Task.FromResult(new ServiceResponse(ex.Message));
+                return new ServiceResponse(ex.Message);
             }
         }
 
@@ -231,7 +248,9 @@ namespace OnlineQuiz.Services
                 {
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshToken, // Will be removed for web clients in controller
-                    ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60 // Convert to seconds
+                    TokenType = "Bearer",
+                    ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60, // Convert to seconds
+                    RefreshExpiresIn = jwtSettings.RefreshTokenExpirationInDays * 24 * 60 * 60 // Convert to seconds
                 };
 
                 return new ServiceResponse<RefreshTokenResponseDto>(response);

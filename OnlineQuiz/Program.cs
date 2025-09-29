@@ -88,7 +88,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
 
                 // Check for token in cookies (web)
-                var token = context.Request.Cookies["jwt"];
+                var token = context.Request.Cookies["__Host-jwt"];
                 if (!string.IsNullOrEmpty(token))
                 {
                     context.Token = token;
