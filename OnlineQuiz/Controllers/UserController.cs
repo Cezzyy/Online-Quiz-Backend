@@ -7,8 +7,8 @@ using System.Security.Claims;
 namespace OnlineQuiz.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Tags("User")]
+    [Route("api/users")]
+    [Tags("Users")]
     [Authorize] // Require authentication for all endpoints
     public class UserController : ControllerBase
     {
