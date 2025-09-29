@@ -70,10 +70,14 @@ namespace OnlineQuiz.Services
                 var accessToken = JwtTokenHelper.GenerateToken(userModel, roles, jwtSettings);
                 var refreshToken = JwtTokenHelper.GenerateRefreshToken();
                 
-                // Store refresh token in database
+                // Hash the refresh token before storing (security best practice)
+                var pepper = RefreshTokenHasher.GetPepper();
+                var tokenHash = RefreshTokenHasher.HashToken(refreshToken, pepper);
+                
+                // Store only the hash in database (never store plaintext tokens)
                 var refreshTokenEntity = new RefreshTokenModel
                 {
-                    Token = refreshToken,
+                    TokenHash = tokenHash,
                     UserId = userModel.UserId,
                     ExpiresAt = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpirationInDays),
                     CreatedAt = DateTime.UtcNow
@@ -211,31 +215,50 @@ namespace OnlineQuiz.Services
                 if (string.IsNullOrWhiteSpace(refreshTokenDto.RefreshToken))
                     return new ServiceResponse<RefreshTokenResponseDto>("Refresh token is required");
 
-                // Find the refresh token in database
-                var refreshTokenEntity = await _context.RefreshTokens
+                // Get pepper for token verification
+                var pepper = RefreshTokenHasher.GetPepper();
+                
+                // Get all active refresh tokens for verification
+                // We need to check all active tokens since we can't query by hash directly
+                var activeRefreshTokens = await _context.RefreshTokens
                     .Include(rt => rt.User)
                         .ThenInclude(u => u.UserRoles)
                             .ThenInclude(ur => ur.Role)
-                    .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
+                    .Where(rt => rt.IsActive)
+                    .ToListAsync();
 
-                if (refreshTokenEntity == null || !refreshTokenEntity.IsActive)
+                // Find the matching token using secure hash verification
+                RefreshTokenModel? matchingToken = null;
+                foreach (var token in activeRefreshTokens)
+                {
+                    if (RefreshTokenHasher.VerifyToken(refreshTokenDto.RefreshToken, token.TokenHash, pepper))
+                    {
+                        matchingToken = token;
+                        break;
+                    }
+                }
+
+                if (matchingToken == null)
                     return new ServiceResponse<RefreshTokenResponseDto>("Invalid or expired refresh token");
 
-                var user = refreshTokenEntity.User;
+                var user = matchingToken.User;
                 var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
-                var roles = user.UserRoles?.Select(ur => ur.Role.Name).ToList() ??[];
+                var roles = user.UserRoles?.Select(ur => ur.Role.Name).ToList() ?? [];
 
-                // Generate new access token
+                // Generate new access token and refresh token
                 var newAccessToken = JwtTokenHelper.GenerateToken(user, roles, jwtSettings);
                 var newRefreshToken = JwtTokenHelper.GenerateRefreshToken();
+                
+                // Hash the new refresh token
+                var newTokenHash = RefreshTokenHasher.HashToken(newRefreshToken, pepper);
 
                 // Revoke old refresh token
-                refreshTokenEntity.RevokedAt = DateTime.UtcNow;
+                matchingToken.RevokedAt = DateTime.UtcNow;
 
-                // Create new refresh token
+                // Create new refresh token with hash
                 var newRefreshTokenEntity = new RefreshTokenModel
                 {
-                    Token = newRefreshToken,
+                    TokenHash = newTokenHash,
                     UserId = (int)user.UserId,
                     ExpiresAt = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpirationInDays),
                     CreatedAt = DateTime.UtcNow
@@ -247,10 +270,10 @@ namespace OnlineQuiz.Services
                 var response = new RefreshTokenResponseDto
                 {
                     AccessToken = newAccessToken,
-                    RefreshToken = newRefreshToken, // Will be removed for web clients in controller
+                    RefreshToken = newRefreshToken,
                     TokenType = "Bearer",
-                    ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60, // Convert to seconds
-                    RefreshExpiresIn = jwtSettings.RefreshTokenExpirationInDays * 24 * 60 * 60 // Convert to seconds
+                    ExpiresIn = jwtSettings.AccessTokenExpirationInMinutes * 60,
+                    RefreshExpiresIn = jwtSettings.RefreshTokenExpirationInDays * 24 * 60 * 60
                 };
 
                 return new ServiceResponse<RefreshTokenResponseDto>(response);
@@ -271,9 +294,13 @@ namespace OnlineQuiz.Services
                 var refreshToken = JwtTokenHelper.GenerateRefreshToken();
                 var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
 
+                // Hash the refresh token before storing
+                var pepper = RefreshTokenHasher.GetPepper();
+                var tokenHash = RefreshTokenHasher.HashToken(refreshToken, pepper);
+
                 var refreshTokenEntity = new RefreshTokenModel
                 {
-                    Token = refreshToken,
+                    TokenHash = tokenHash,
                     UserId = (int)user.UserId,
                     ExpiresAt = DateTime.UtcNow.AddDays(jwtSettings.RefreshTokenExpirationInDays),
                     CreatedAt = DateTime.UtcNow
@@ -297,16 +324,32 @@ namespace OnlineQuiz.Services
                 if (string.IsNullOrWhiteSpace(refreshToken))
                     return new ServiceResponse("Refresh token is required");
 
-                var refreshTokenEntity = await _context.RefreshTokens
-                    .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+                // Get pepper for token verification
+                var pepper = RefreshTokenHasher.GetPepper();
+                
+                // Get all active refresh tokens for verification
+                var activeRefreshTokens = await _context.RefreshTokens
+                    .Where(rt => !rt.IsRevoked)
+                    .ToListAsync();
 
-                if (refreshTokenEntity == null)
+                // Find the matching token using secure hash verification
+                RefreshTokenModel? matchingToken = null;
+                foreach (var token in activeRefreshTokens)
+                {
+                    if (RefreshTokenHasher.VerifyToken(refreshToken, token.TokenHash, pepper))
+                    {
+                        matchingToken = token;
+                        break;
+                    }
+                }
+
+                if (matchingToken == null)
                     return new ServiceResponse("Refresh token not found");
 
-                if (refreshTokenEntity.IsRevoked)
+                if (matchingToken.IsRevoked)
                     return new ServiceResponse("Refresh token already revoked");
 
-                refreshTokenEntity.RevokedAt = DateTime.UtcNow;
+                matchingToken.RevokedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
                 return new ServiceResponse();
