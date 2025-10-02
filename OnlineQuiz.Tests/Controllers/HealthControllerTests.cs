@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Moq;
 using OnlineQuiz.Controllers;
 using OnlineQuiz.Data;
@@ -30,8 +31,10 @@ namespace OnlineQuiz.Tests.Controllers
         public async Task HealthCheck_DatabaseConnected_ReturnsOk()
         {
             // Arrange
-            _mockContext.Setup(c => c.Database.CanConnectAsync(It.IsAny<CancellationToken>()))
+            var mockDatabase = new Mock<DatabaseFacade>(_mockContext.Object);
+            mockDatabase.Setup(d => d.CanConnectAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
+            _mockContext.Setup(c => c.Database).Returns(mockDatabase.Object);
 
             // Act
             var result = await _controller.HealthCheck();
@@ -39,19 +42,20 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
-            
-            dynamic healthResponse = okResult.Value;
-            Assert.Equal("healthy", healthResponse.status);
-            Assert.Equal("healthy", healthResponse.database.status);
-            Assert.True(healthResponse.database.connected);
+            Assert.NotNull(okResult.Value);
+            Assert.Equal("healthy", GetProperty<string>(okResult.Value!, "status"));
+            Assert.Equal("healthy", GetProperty<string>(okResult.Value!, "database.status"));
+            Assert.True(GetProperty<bool>(okResult.Value!, "database.connected"));
         }
 
         [Fact]
         public async Task HealthCheck_DatabaseDisconnected_ReturnsServiceUnavailable()
         {
             // Arrange
-            _mockContext.Setup(c => c.Database.CanConnectAsync(It.IsAny<CancellationToken>()))
+            var mockDatabase = new Mock<DatabaseFacade>(_mockContext.Object);
+            mockDatabase.Setup(d => d.CanConnectAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(false);
+            _mockContext.Setup(c => c.Database).Returns(mockDatabase.Object);
 
             // Act
             var result = await _controller.HealthCheck();
@@ -59,19 +63,20 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var statusCodeResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(503, statusCodeResult.StatusCode);
-            
-            dynamic healthResponse = statusCodeResult.Value;
-            Assert.Equal("unhealthy", healthResponse.status);
-            Assert.Equal("unhealthy", healthResponse.database.status);
-            Assert.False(healthResponse.database.connected);
+            Assert.NotNull(statusCodeResult.Value);
+            Assert.Equal("unhealthy", GetProperty<string>(statusCodeResult.Value!, "status"));
+            Assert.Equal("unhealthy", GetProperty<string>(statusCodeResult.Value!, "database.status"));
+            Assert.False(GetProperty<bool>(statusCodeResult.Value!, "database.connected"));
         }
 
         [Fact]
         public async Task HealthCheck_DatabaseThrowsException_ReturnsServiceUnavailable()
         {
             // Arrange
-            _mockContext.Setup(c => c.Database.CanConnectAsync(It.IsAny<CancellationToken>()))
+            var mockDatabase = new Mock<DatabaseFacade>(_mockContext.Object);
+            mockDatabase.Setup(d => d.CanConnectAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Database connection error"));
+            _mockContext.Setup(c => c.Database).Returns(mockDatabase.Object);
 
             // Act
             var result = await _controller.HealthCheck();
@@ -79,12 +84,25 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var statusCodeResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(503, statusCodeResult.StatusCode);
-            
-            dynamic healthResponse = statusCodeResult.Value;
-            Assert.Equal("unhealthy", healthResponse.status);
-            Assert.Equal("unhealthy", healthResponse.database.status);
-            Assert.False(healthResponse.database.connected);
-            Assert.Equal("Database connection error", healthResponse.database.error);
+            Assert.NotNull(statusCodeResult.Value);
+            Assert.Equal("unhealthy", GetProperty<string>(statusCodeResult.Value!, "status"));
+            Assert.Equal("unhealthy", GetProperty<string>(statusCodeResult.Value!, "database.status"));
+            Assert.False(GetProperty<bool>(statusCodeResult.Value!, "database.connected"));
+            Assert.Equal("Database connection error", GetProperty<string>(statusCodeResult.Value!, "database.error"));
+        }
+
+        private static T? GetProperty<T>(object obj, string propertyPath)
+        {
+            object? current = obj;
+            foreach (var name in propertyPath.Split('.'))
+            {
+                if (current == null) return default;
+                var type = current.GetType();
+                var prop = type.GetProperty(name);
+                if (prop == null) return default;
+                current = prop.GetValue(current);
+            }
+            return current is T t ? t : default;
         }
     }
 }

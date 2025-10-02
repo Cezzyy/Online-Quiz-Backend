@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using OnlineQuiz.Controllers;
+using OnlineQuiz.Data;
 using OnlineQuiz.DTOs;
 using OnlineQuiz.IServices;
 using OnlineQuiz.Models.Response;
@@ -15,12 +18,22 @@ namespace OnlineQuiz.Tests.Controllers
     public class AuthControllerTests
     {
         private readonly Mock<OnlineQuiz.IServices.IAuthService> _mockAuthService;
-    private readonly AuthController _controller;
+        private readonly AuthController _controller;
+        private readonly OnlineQuizDbContext _dbContext;
+        private readonly Mock<ILogger<AuthController>> _loggerMock;
 
     public AuthControllerTests()
     {
         _mockAuthService = new Mock<OnlineQuiz.IServices.IAuthService>();
-        _controller = new AuthController(_mockAuthService.Object);
+
+            // Set up in-memory DbContext and logger for controller constructor
+            var options = new DbContextOptionsBuilder<OnlineQuizDbContext>()
+                .UseInMemoryDatabase(databaseName: "AuthControllerTestsDb")
+                .Options;
+            _dbContext = new OnlineQuizDbContext(options);
+            _loggerMock = new Mock<ILogger<AuthController>>();
+
+            _controller = new AuthController(_mockAuthService.Object, _dbContext, _loggerMock.Object);
             
             // Setup default HttpContext for controller
             var httpContext = new DefaultHttpContext();
@@ -40,10 +53,10 @@ namespace OnlineQuiz.Tests.Controllers
                 AccessToken = "test-token",
                 RefreshToken = "refresh-token",
                 ExpiresIn = 3600,
-                User = new UserInfoDto { Id = "1", Email = "test@example.com", Name = "Test User" }
+                User = new UserSummaryDto { Id = 1, Email = "test@example.com", FullName = "Test User", Roles = new List<string>() }
             };
 
-            var apiResponse = new ApiResponse<LoginResponseDto>
+            var apiResponse = new ServiceResponse<LoginResponseDto>
             {
                 Success = true,
                 Message = "Login successful",
@@ -58,7 +71,7 @@ namespace OnlineQuiz.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            var returnValue = Assert.IsType<ApiResponse<LoginResponseDto>>(okResult.Value);
+            var returnValue = Assert.IsType<ServiceResponse<LoginResponseDto>>(okResult.Value);
             Assert.True(returnValue.Success);
             Assert.Equal(responseData, returnValue.Data);
         }
@@ -68,7 +81,7 @@ namespace OnlineQuiz.Tests.Controllers
         {
             // Arrange
             var loginDto = new LoginDto { Email = "invalid@example.com", Password = "wrongpassword" };
-            var apiResponse = new ApiResponse<LoginResponseDto>
+            var apiResponse = new ServiceResponse<LoginResponseDto>
             {
                 Success = false,
                 Message = "Invalid email or password",
@@ -86,18 +99,18 @@ namespace OnlineQuiz.Tests.Controllers
         }
 
         [Fact]
-        public void Logout_AuthenticatedUser_ReturnsOkResult()
+        public async Task Logout_AuthenticatedUser_ReturnsOkResult()
         {
             // Arrange
             SetupUserClaims("1", "test@example.com", "Test User");
 
             // Act
-            var result = _controller.Logout();
+            var result = await _controller.Logout();
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic response = okResult.Value;
-            Assert.Equal("Logged out successfully", response.message.ToString());
+            Assert.NotNull(okResult.Value);
+            Assert.Equal("Logged out successfully", GetProperty<string>(okResult.Value!, "message"));
         }
 
         [Fact]
@@ -111,10 +124,10 @@ namespace OnlineQuiz.Tests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic response = okResult.Value;
-            Assert.True(response.valid);
-            Assert.Equal("1", response.user.id.ToString());
-            Assert.Equal("test@example.com", response.user.email.ToString());
+            Assert.NotNull(okResult.Value);
+            Assert.True(GetProperty<bool>(okResult.Value!, "valid"));
+            Assert.Equal("1", GetProperty<string>(okResult.Value!, "user.id"));
+            Assert.Equal("test@example.com", GetProperty<string>(okResult.Value!, "user.email"));
         }
 
         [Fact]
@@ -129,7 +142,7 @@ namespace OnlineQuiz.Tests.Controllers
                 ExpiresIn = 3600
             };
 
-            var apiResponse = new ApiResponse<RefreshTokenResponseDto>
+            var apiResponse = new ServiceResponse<RefreshTokenResponseDto>
             {
                 Success = true,
                 Message = "Token refreshed successfully",
@@ -140,11 +153,11 @@ namespace OnlineQuiz.Tests.Controllers
                 .ReturnsAsync(apiResponse);
 
             // Act
-            var result = await _controller.RefreshToken(null);
+            var result = await _controller.RefreshToken(refreshRequest);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            var returnValue = Assert.IsType<ApiResponse<RefreshTokenResponseDto>>(okResult.Value);
+            var returnValue = Assert.IsType<ServiceResponse<RefreshTokenResponseDto>>(okResult.Value);
             Assert.True(returnValue.Success);
             Assert.Equal(responseData, returnValue.Data);
         }
@@ -154,7 +167,7 @@ namespace OnlineQuiz.Tests.Controllers
         {
             // Arrange
             var refreshRequest = new OnlineQuiz.DTOs.RefreshRequest { RefreshToken = "invalid-refresh-token" };
-            var apiResponse = new ApiResponse<RefreshTokenResponseDto>
+            var apiResponse = new ServiceResponse<RefreshTokenResponseDto>
             {
                 Success = false,
                 Message = "Invalid refresh token",
@@ -165,7 +178,7 @@ namespace OnlineQuiz.Tests.Controllers
                 .ReturnsAsync(apiResponse);
 
             // Act
-            var result = await _controller.RefreshToken(null);
+            var result = await _controller.RefreshToken(refreshRequest);
 
             // Assert
             var problemResult = Assert.IsType<ObjectResult>(result.Result);
@@ -205,11 +218,25 @@ namespace OnlineQuiz.Tests.Controllers
 
             var identity = new ClaimsIdentity(claims, "TestAuth");
             var principal = new ClaimsPrincipal(identity);
-
+            
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = principal }
             };
+        }
+
+        private static T? GetProperty<T>(object obj, string propertyPath)
+        {
+            object? current = obj;
+            foreach (var name in propertyPath.Split('.'))
+            {
+                if (current == null) return default;
+                var type = current.GetType();
+                var prop = type.GetProperty(name);
+                if (prop == null) return default;
+                current = prop.GetValue(current);
+            }
+            return current is T t ? t : default;
         }
     }
 }
