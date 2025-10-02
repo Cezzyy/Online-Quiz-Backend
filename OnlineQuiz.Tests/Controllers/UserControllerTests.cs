@@ -43,12 +43,12 @@ namespace OnlineQuiz.Tests.Controllers
             // Arrange
             var users = new List<UserDto>
             {
-                new UserDto { UserId = 1, Email = "user1@example.com", FirstName = "User", LastName = "One" },
-                new UserDto { UserId = 2, Email = "user2@example.com", FirstName = "User", LastName = "Two" }
+                new UserDto { UserId = 1, Email = "user1@example.com", FullName = "User One" },
+                new UserDto { UserId = 2, Email = "user2@example.com", FullName = "User Two" }
             };
 
             _mockUserService.Setup(service => service.GetAllUsersAsync())
-                .ReturnsAsync(new ApiResponse<IEnumerable<UserDto>>
+                .ReturnsAsync(new ServiceResponse<IEnumerable<UserDto>>
                 {
                     Success = true,
                     Message = "Users retrieved successfully",
@@ -61,11 +61,10 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
-            
-            dynamic response = okResult.Value;
-            Assert.True(response.success);
-            Assert.Equal("Users retrieved successfully", response.message);
-            Assert.Equal(2, response.count);
+            Assert.NotNull(okResult.Value);
+            Assert.True(GetProperty<bool>(okResult.Value!, "success"));
+            Assert.Equal("Users retrieved successfully", GetProperty<string>(okResult.Value!, "message"));
+            Assert.Equal(2, GetProperty<int>(okResult.Value!, "count"));
         }
 
         [Fact]
@@ -73,10 +72,10 @@ namespace OnlineQuiz.Tests.Controllers
         {
             // Arrange
             var userId = 1L;
-            var user = new UserDto { UserId = userId, Email = "user@example.com", FirstName = "Test", LastName = "User" };
+            var user = new UserDto { UserId = userId, Email = "user@example.com", FullName = "Test User" };
 
             _mockUserService.Setup(service => service.GetUserByIdAsync(userId))
-                .ReturnsAsync(new ApiResponse<UserDto>
+                .ReturnsAsync(new ServiceResponse<UserDto>
                 {
                     Success = true,
                     Message = "User retrieved successfully",
@@ -89,10 +88,9 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
-            
-            dynamic response = okResult.Value;
-            Assert.True(response.success);
-            Assert.Equal("User retrieved successfully", response.message);
+            Assert.NotNull(okResult.Value);
+            Assert.True(GetProperty<bool>(okResult.Value!, "success"));
+            Assert.Equal("User retrieved successfully", GetProperty<string>(okResult.Value!, "message"));
         }
 
         [Fact]
@@ -116,7 +114,7 @@ namespace OnlineQuiz.Tests.Controllers
             var userId = 999L;
 
             _mockUserService.Setup(service => service.GetUserByIdAsync(userId))
-                .ReturnsAsync(new ApiResponse<UserDto>
+                .ReturnsAsync(new ServiceResponse<UserDto>
                 {
                     Success = false,
                     Message = "User not found"
@@ -138,21 +136,19 @@ namespace OnlineQuiz.Tests.Controllers
             {
                 Email = "newuser@example.com",
                 Password = "Password123!",
-                FirstName = "New",
-                LastName = "User",
-                RoleName = "Student"
+                FullName = "New User",
+                Roles = new List<string> { "Student" }
             };
 
             var createdUser = new UserDto
             {
                 UserId = 3,
                 Email = "newuser@example.com",
-                FirstName = "New",
-                LastName = "User"
+                FullName = "New User"
             };
 
             _mockUserService.Setup(service => service.CreateUserAsync(It.IsAny<CreateUserDto>()))
-                .ReturnsAsync(new ApiResponse<UserDto>
+                .ReturnsAsync(new ServiceResponse<UserDto>
                 {
                     Success = true,
                     Message = "User created successfully",
@@ -165,10 +161,9 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
             Assert.Equal(201, createdAtActionResult.StatusCode);
-            
-            dynamic response = createdAtActionResult.Value;
-            Assert.True(response.success);
-            Assert.Equal("User created successfully", response.message);
+            Assert.NotNull(createdAtActionResult.Value);
+            Assert.True(GetProperty<bool>(createdAtActionResult.Value!, "success"));
+            Assert.Equal("User created successfully", GetProperty<string>(createdAtActionResult.Value!, "message"));
         }
 
         [Fact]
@@ -183,9 +178,22 @@ namespace OnlineQuiz.Tests.Controllers
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Equal(400, badRequestResult.StatusCode);
-            
-            dynamic response = badRequestResult.Value;
-            Assert.Equal("You cannot delete your own account", response.message);
+            Assert.NotNull(badRequestResult.Value);
+            Assert.Equal("You cannot delete your own account", GetProperty<string>(badRequestResult.Value!, "message"));
+        }
+
+        private static T? GetProperty<T>(object obj, string propertyPath)
+        {
+            object? current = obj;
+            foreach (var name in propertyPath.Split('.'))
+            {
+                if (current == null) return default;
+                var type = current.GetType();
+                var prop = type.GetProperty(name);
+                if (prop == null) return default;
+                current = prop.GetValue(current);
+            }
+            return current is T t ? t : default;
         }
     }
 }
