@@ -88,7 +88,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
 
                 // Check for token in cookies (web)
-                var token = context.Request.Cookies["jwt"];
+                var token = context.Request.Cookies["__Host-jwt"];
                 if (!string.IsNullOrEmpty(token))
                 {
                     context.Token = token;
@@ -100,7 +100,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+builder.Services.AddAutoMapper(cfg => { }, typeof(AutoMapperProfile));
 
 // Register Repository Layer
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -228,6 +228,9 @@ app.Use(async (context, next) =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Redirect root path to Scalar API documentation
+app.MapGet("/", () => Results.Redirect("/scalar/v1"));
 
 app.MapControllers();
 

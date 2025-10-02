@@ -3,6 +3,14 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Security-related files (DO NOT COMMIT)
+setup-pepper.ps1
+*.pepper
+*.secret
+.env
+.env.local
+.env.production
+
 # User-specific files
 *.rsuser
 *.suo
