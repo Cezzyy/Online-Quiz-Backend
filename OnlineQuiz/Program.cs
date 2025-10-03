@@ -113,6 +113,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 // builder.Services.AddScoped<ICourseService, CourseService>();
 // builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 
 // Configure CORS for Web (Vue) and Mobile (Flutter)
 builder.Services.AddCors(options =>

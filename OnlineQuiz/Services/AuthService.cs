@@ -224,7 +224,7 @@ namespace OnlineQuiz.Services
                     .Include(rt => rt.User)
                         .ThenInclude(u => u.UserRoles)
                             .ThenInclude(ur => ur.Role)
-                    .Where(rt => rt.IsActive)
+                    .Where(rt => rt.RevokedAt == null && rt.ExpiresAt > DateTime.UtcNow)
                     .ToListAsync();
 
                 // Find the matching token using secure hash verification
