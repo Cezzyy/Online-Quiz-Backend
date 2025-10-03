@@ -42,5 +42,6 @@ namespace OnlineQuiz.Models
         public virtual ICollection<AttemptModel> Attempts { get; set; } = new List<AttemptModel>();
         public virtual ICollection<NotificationModel> Notifications { get; set; } = new List<NotificationModel>();
         public virtual ICollection<ExportImportLogModel> ExportImportLogs { get; set; } = new List<ExportImportLogModel>();
+        public virtual ICollection<ActivityLogModel> ActivityLogs { get; set; } = new List<ActivityLogModel>();
     }
 }

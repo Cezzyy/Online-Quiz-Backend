@@ -13,10 +13,12 @@ namespace OnlineQuiz.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IActivityLogService _activityLogService;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IActivityLogService activityLogService)
         {
             _userService = userService;
+            _activityLogService = activityLogService;
         }
 
         /// <summary>
@@ -200,6 +202,18 @@ namespace OnlineQuiz.Controllers
                     return BadRequest(new { message = result.Message });
                 }
 
+                // Log activity for user creation
+                var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (long.TryParse(currentUserIdClaim, out long currentUserId) && result.Data?.UserId != null)
+                {
+                    await _activityLogService.LogEntityActionAsync(currentUserId, "CREATE", "User", result.Data.UserId, 
+                        $"Created new user: {createUserDto.FullName} ({createUserDto.Email})", null, new { 
+                            FullName = createUserDto.FullName, 
+                            Email = createUserDto.Email, 
+                            Roles = createUserDto.Roles 
+                        });
+                }
+
                 return CreatedAtAction(
                     nameof(GetUserById), 
                     new { id = result.Data?.UserId }, 
@@ -249,6 +263,19 @@ namespace OnlineQuiz.Controllers
                     return BadRequest(new { message = result.Message });
                 }
 
+                // Log activity for user update
+                var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (long.TryParse(currentUserIdClaim, out long currentUserId))
+                {
+                    await _activityLogService.LogEntityActionAsync(currentUserId, "UPDATE", "User", id, 
+                        $"Updated user with ID: {id}", null, new { 
+                            FullName = updateUserDto.FullName, 
+                            ContactNumber = updateUserDto.ContactNumber, 
+                            EmergencyContactNumber = updateUserDto.EmergencyContactNumber,
+                            Status = updateUserDto.Status
+                        });
+                }
+
                 return Ok(new 
                 { 
                     success = true,
@@ -296,6 +323,13 @@ namespace OnlineQuiz.Controllers
                 if (!result.Success)
                 {
                     return BadRequest(new { message = result.Message });
+                }
+
+                // Log activity for user deletion
+                if (currentUserId != null && long.TryParse(currentUserId, out long logCurrentUserId))
+                {
+                    await _activityLogService.LogEntityActionAsync(logCurrentUserId, "DELETE", "User", id, 
+                        $"Deleted user with ID: {id}", null, null);
                 }
 
                 return Ok(new 
