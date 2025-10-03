@@ -17,12 +17,14 @@ namespace OnlineQuiz.Controllers
         private readonly IAuthService _authService;
         private readonly OnlineQuizDbContext _context;
         private readonly ILogger<AuthController> _logger;
+        private readonly IActivityLogService _activityLogService;
 
-        public AuthController(IAuthService authService, OnlineQuizDbContext context, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, OnlineQuizDbContext context, ILogger<AuthController> logger, IActivityLogService activityLogService)
         {
             _authService = authService;
             _context = context;
             _logger = logger;
+            _activityLogService = activityLogService;
         }
 
         /// <summary>
@@ -119,7 +121,10 @@ namespace OnlineQuiz.Controllers
                     Path = "/" 
                 };
                 
-                Response.Cookies.Append("__Host-jwt", response.Data.AccessToken, accessTokenOptions);
+                if (!string.IsNullOrEmpty(response.Data.AccessToken))
+                {
+                    Response.Cookies.Append("__Host-jwt", response.Data.AccessToken, accessTokenOptions);
+                }
                 if (!string.IsNullOrEmpty(response.Data.RefreshToken))
                 {
                     Response.Cookies.Append("__Host-refresh", response.Data.RefreshToken, refreshTokenOptions);
@@ -133,6 +138,13 @@ namespace OnlineQuiz.Controllers
             // Log successful login
             _logger.LogInformation("Successful login for user: {Email}, UserId: {UserId}, ClientType: {ClientType}, IP: {ClientIP}", 
                 loginDto.Email, response.Data.User?.Id, isWebClient ? "Web" : "Mobile", Request.HttpContext.Connection.RemoteIpAddress);
+
+            // Log activity
+            if (response.Data.User?.Id != null)
+            {
+                await _activityLogService.LogUserActionAsync(response.Data.User.Id, "LOGIN", 
+                    $"User logged in successfully from {(isWebClient ? "Web" : "Mobile")} client");
+            }
 
             return Ok(response);
         }
@@ -172,6 +184,9 @@ namespace OnlineQuiz.Controllers
                     {
                         // I should do log error here gamit Ilogger and type shit pero unya lang wait lang
                     }
+                    
+                    // Log activity
+                    await _activityLogService.LogUserActionAsync(userId, "LOGOUT", "User logged out successfully");
                 }
                 
                 return Ok(new { 
@@ -312,7 +327,10 @@ namespace OnlineQuiz.Controllers
                     Path = "/"
                 };
                 
-                Response.Cookies.Append("__Host-jwt", response.Data.AccessToken, accessTokenOptions);
+                if (!string.IsNullOrEmpty(response.Data.AccessToken))
+                {
+                    Response.Cookies.Append("__Host-jwt", response.Data.AccessToken, accessTokenOptions);
+                }
                 if (!string.IsNullOrEmpty(response.Data.RefreshToken))
                 {
                     Response.Cookies.Append("__Host-refresh", response.Data.RefreshToken, refreshTokenOptions);

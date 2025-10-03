@@ -25,6 +25,7 @@ namespace OnlineQuiz.Data
         public DbSet<AttemptAnswerModel> AttemptAnswers { get; set; } = null!;
         public DbSet<NotificationModel> Notifications { get; set; } = null!;
         public DbSet<ExportImportLogModel> ExportImportLogs { get; set; } = null!;
+        public DbSet<ActivityLogModel> ActivityLogs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -84,6 +85,12 @@ namespace OnlineQuiz.Data
                 .HasOne(e => e.User)
                 .WithMany(u => u.ExportImportLogs)
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ActivityLogModel>()
+                .HasOne(a => a.User)
+                .WithMany(u => u.ActivityLogs)
+                .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Configure Course-Teacher relationship
