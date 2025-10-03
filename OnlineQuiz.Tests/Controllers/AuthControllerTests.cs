@@ -21,6 +21,7 @@ namespace OnlineQuiz.Tests.Controllers
         private readonly AuthController _controller;
         private readonly OnlineQuizDbContext _dbContext;
         private readonly Mock<ILogger<AuthController>> _loggerMock;
+        private readonly Mock<IActivityLogService> _activityLogServiceMock;
 
     public AuthControllerTests()
     {
@@ -32,8 +33,18 @@ namespace OnlineQuiz.Tests.Controllers
                 .Options;
             _dbContext = new OnlineQuizDbContext(options);
             _loggerMock = new Mock<ILogger<AuthController>>();
+            _activityLogServiceMock = new Mock<IActivityLogService>();
 
-            _controller = new AuthController(_mockAuthService.Object, _dbContext, _loggerMock.Object);
+            // Ensure awaited logging calls return a non-null Task
+            _activityLogServiceMock
+                .Setup(s => s.LogUserActionAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+            _activityLogServiceMock
+                .Setup(s => s.LogEntityActionAsync(
+                    It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()))
+                .Returns(Task.CompletedTask);
+
+            _controller = new AuthController(_mockAuthService.Object, _dbContext, _loggerMock.Object, _activityLogServiceMock.Object);
             
             // Setup default HttpContext for controller
             var httpContext = new DefaultHttpContext();

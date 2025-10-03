@@ -17,11 +17,21 @@ namespace OnlineQuiz.Tests.Controllers
     {
         private readonly Mock<IUserService> _mockUserService;
         private readonly UserController _controller;
+        private readonly Mock<IActivityLogService> _activityLogServiceMock;
 
         public UserControllerTests()
         {
             _mockUserService = new Mock<IUserService>();
-            _controller = new UserController(_mockUserService.Object);
+            _activityLogServiceMock = new Mock<IActivityLogService>();
+            _activityLogServiceMock
+                .Setup(s => s.LogEntityActionAsync(
+                    It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()))
+                .Returns(Task.CompletedTask);
+            _activityLogServiceMock
+                .Setup(s => s.LogUserActionAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+
+            _controller = new UserController(_mockUserService.Object, _activityLogServiceMock.Object);
 
             // Setup controller context with claims for authorization tests
             var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
