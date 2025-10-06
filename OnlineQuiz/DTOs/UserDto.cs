@@ -12,6 +12,14 @@ namespace OnlineQuiz.DTOs
         public DateTime UpdatedAt { get; set; }
         public List<string> Roles { get; set; } = [];
     }
+    //
+    public class CourseDto
+    {
+        public long CourseId { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public long InstructorUserId { get; set; }
+    }
 
     public class CreateUserDto
     {
