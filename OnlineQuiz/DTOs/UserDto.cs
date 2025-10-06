@@ -19,6 +19,7 @@ namespace OnlineQuiz.DTOs
         public string Code { get; set; }
         public string Name { get; set; }
         public long InstructorUserId { get; set; }
+        public String InstructorName { get; set; }
     }
 
     public class CreateUserDto

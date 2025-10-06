@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using OnlineQuiz.Data;
+using OnlineQuiz.DTOs;
 using OnlineQuiz.Models;
 
 namespace OnlineQuiz.Controllers
@@ -66,35 +69,81 @@ namespace OnlineQuiz.Controllers
 
         //POST a new course
         [HttpPost]
-        public async Task<ActionResult> AddCourse([FromBody] CourseModel course)
+        public async Task<IActionResult> AddCourse([FromBody] CourseCreationDto courseDto)
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
+            var teacher = await _context.Teachers
+                                        .Include(t => t.User)
+                                        .FirstOrDefaultAsync(t => t.UserId == courseDto.InstructorUserId);
 
-            // Null out navigation properties — EF will handle relationships
-            course.Instructor = null;
+            if (teacher == null)
+            {
+                ModelState.AddModelError("InstructorUserId", "The specified instructor (Teacher with this UserId) does not exist.");
+                return BadRequest(ModelState);
+            }
+
+            // Map DTO to Model
+            var course = new CourseModel
+            {
+                Code = courseDto.Code,
+                Name = courseDto.Name,
+                InstructorUserId = courseDto.InstructorUserId 
+            };
 
             _context.Courses.Add(course);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCourse), new { id = course.CourseId }, new
+            var responseDto = new CourseDto
             {
-                course.CourseId,
-                course.Code,
-                course.Name,
-                course.InstructorUserId
-            });
+                CourseId = course.CourseId,
+                Code = course.Code,
+                Name = course.Name,
+                InstructorUserId = course.InstructorUserId,
+                InstructorName = teacher.User?.FullName ?? "Unknown"
+            };
+
+            return CreatedAtAction(nameof(GetCourse), new { id = course.CourseId }, responseDto);
         }
 
         //PUT (Update)
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCourse(long id, [FromBody] CourseModel course)
+        public async Task<IActionResult> UpdateCourse(int id, [FromBody] CourseCreationDto courseDto)
         {
-            if (id != course.CourseId)
-                return BadRequest("Course ID mismatch");
+            if (id <= 0)
+            {
+                return BadRequest("Invalid Course ID provided in the route.");
+            }
 
-            course.Instructor = null; // Prevent EF circular ref
-            _context.Entry(course).State = EntityState.Modified;
+
+            var existingCourse = await _context.Courses.FindAsync(id);
+            if (existingCourse == null)
+            {
+                return NotFound();
+            }
+            var teacherExist = await _context.Teachers.AnyAsync(t => t.UserId == courseDto.InstructorUserId);
+            if (!teacherExist)
+            {
+                ModelState.AddModelError("InstructorUserId", "The specified instructor (Teacher with this UserId) does not exist.");
+                return BadRequest(ModelState);
+            }
+            if (existingCourse.Code != courseDto.Code)
+            {
+                var courseWithSameCodeExist = await _context.Courses.AnyAsync(c => c.Code == courseDto.Code && c.CourseId != id);
+
+                if (courseWithSameCodeExist)
+                {
+                    ModelState.AddModelError("Code", $"A course with code '{courseDto.Code}' already exists.");
+                    return Conflict(ModelState);
+                }
+            }
+
+            // Update properties
+            existingCourse.Code = courseDto.Code;
+            existingCourse.Name = courseDto.Name;
+            existingCourse.InstructorUserId = courseDto.InstructorUserId;
 
             try
             {
@@ -102,14 +151,16 @@ namespace OnlineQuiz.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Courses.Any(c => c.CourseId == id))
-                    return NotFound();
+                if (!await _context.Courses.AnyAsync(c => c.CourseId == id))
+                {
+                    return NotFound(); 
+                }
                 throw;
             }
 
             return NoContent();
         }
-
+        
         //DELETE
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourse(long id)
