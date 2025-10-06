@@ -63,7 +63,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ActivityLogs");
+                    b.ToTable("ActivityLogs", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.AttemptAnswerModel", b =>
@@ -99,7 +99,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("AttemptAnswers");
+                    b.ToTable("AttemptAnswers", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.AttemptModel", b =>
@@ -136,7 +136,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Attempts");
+                    b.ToTable("Attempts", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.ChoiceModel", b =>
@@ -162,7 +162,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("Choices");
+                    b.ToTable("Choices", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.CourseModel", b =>
@@ -194,7 +194,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("InstructorUserId");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.EnrollmentModel", b =>
@@ -221,7 +221,7 @@ namespace OnlineQuiz.Migrations
                     b.HasIndex("UserId", "CourseId")
                         .IsUnique();
 
-                    b.ToTable("Enrollments");
+                    b.ToTable("Enrollments", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.ExportImportLogModel", b =>
@@ -257,7 +257,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ExportImportLogs");
+                    b.ToTable("ExportImportLogs", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.NotificationModel", b =>
@@ -301,7 +301,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.QuestionModel", b =>
@@ -336,7 +336,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Questions", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.QuizModel", b =>
@@ -377,7 +377,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.RefreshTokenModel", b =>
@@ -409,7 +409,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.RoleModel", b =>
@@ -430,7 +430,7 @@ namespace OnlineQuiz.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
 
                     b.HasData(
                         new
@@ -477,7 +477,7 @@ namespace OnlineQuiz.Migrations
                     b.HasIndex("StudentNumber")
                         .IsUnique();
 
-                    b.ToTable("Students");
+                    b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.TeacherModel", b =>
@@ -491,7 +491,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Teachers");
+                    b.ToTable("Teachers", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.UserModel", b =>
@@ -541,7 +541,7 @@ namespace OnlineQuiz.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.UserRoleModel", b =>
@@ -558,7 +558,7 @@ namespace OnlineQuiz.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("OnlineQuiz.Models.ActivityLogModel", b =>

@@ -9,7 +9,6 @@ using OnlineQuiz.Configuration;
 using OnlineQuiz.Mappings;
 using OnlineQuiz.IRepository;
 using OnlineQuiz.Repository;
-using OnlineQuiz.Class;
 using Scalar.AspNetCore;
 using DotNetEnv;
 
@@ -17,7 +16,7 @@ using DotNetEnv;
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
-
+    
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -218,7 +217,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    
+
     // API-specific headers
     context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
     context.Response.Headers["Pragma"] = "no-cache";
