@@ -43,7 +43,7 @@ namespace OnlineQuiz.Class
                     return new ServiceResponse<LoginResponseDto>("Account is not active");
 
                 // Get user roles
-                var roles = user.UserRoles?.Where(ur => ur.Role != null).Select(ur => ur.Role!.Name) ?? Enumerable.Empty<string>();
+                var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? [];
 
                 var token = JwtTokenHelper.GenerateToken(user, roles, _jwtSettings);
                 var userSummary = new UserSummaryDto
