@@ -5,6 +5,12 @@ namespace OnlineQuiz.Tests.Utilities
 {
     public class PasswordHelperTests
     {
+        public PasswordHelperTests()
+        {
+            // Speed up BCrypt for tests
+            Environment.SetEnvironmentVariable("BCRYPT_WORK_FACTOR", "4");
+        }
+
         [Fact]
         public void HashPassword_ReturnsDifferentFromOriginal_AndVerifies()
         {
