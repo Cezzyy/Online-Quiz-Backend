@@ -1,3 +1,4 @@
+using OnlineQuiz.Models;
 using OnlineQuiz.Models.Response;
 using OnlineQuiz.DTOs;
 
