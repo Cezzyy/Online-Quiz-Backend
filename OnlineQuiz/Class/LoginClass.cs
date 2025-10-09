@@ -44,14 +44,15 @@ namespace OnlineQuiz.Class
 
                 // Get user roles
                 var roles = user.UserRoles?.Select(ur => ur.Role.Name) ?? [];
-
+                
                 var token = JwtTokenHelper.GenerateToken(user, roles, _jwtSettings);
+                var userDto = _mapper.Map<UserDto>(user);
                 var userSummary = new UserSummaryDto
                 {
-                    Id = user.UserId,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    Roles = roles.ToList()
+                    Id = userDto.UserId,
+                    Email = userDto.Email,
+                    FullName = userDto.FullName,
+                    Roles = [.. roles]
                 };
                 
                 var loginResponse = new LoginResponseDto
@@ -65,7 +66,6 @@ namespace OnlineQuiz.Class
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"AuthenticateAsync exception: {ex.Message}\n{ex.StackTrace}");
                 return new ServiceResponse<LoginResponseDto>(ex.Message);
             }
         }
