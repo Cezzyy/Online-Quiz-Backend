@@ -1,16 +1,14 @@
-﻿using OnlineQuiz.Models.Response;
-using OnlineQuiz.DTOs;
-using Microsoft.AspNetCore.Mvc;
+﻿using OnlineQuiz.DTOs;
+using OnlineQuiz.Models.Response;
 
 namespace OnlineQuiz.IServices
 {
     public interface ICourseService
     {
-        Task<ServiceResponse<IEnumerable<CourseDto>>> GetAllCoursesAsync();
-        Task<ServiceResponse<CourseDto>> GetCourseByCodeAsync(string code);
-        Task<ServiceResponse<CourseDto>> GetCourseByIdAsync(long courseId);
-        Task<ServiceResponse<CourseDto>> CreateCourseAsync(CreateCourseDto createCourseDto);
-        Task<ServiceResponse<CourseDto>> UpdateCourseAsync(long courseId, UpdateCourseDto updateCourseDto);
-        Task<ServiceResponse> DeleteCourseAsync(long courseId);
+        Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetAllCoursesAsync();
+        Task<ServiceResponse<CourseDTO.CourseDto>> GetCourseByIdAsync(long id);
+        Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto);
+        Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto);
+        Task<ServiceResponse<bool>> DeleteCourseAsync(long id);
     }
 }

@@ -1,6 +1,6 @@
 ﻿using OnlineQuiz.DTOs;
-using OnlineQuiz.IRepository;
 using OnlineQuiz.IServices;
+using OnlineQuiz.IRepository;
 using OnlineQuiz.Models.Response;
 
 namespace OnlineQuiz.Services
@@ -8,13 +8,25 @@ namespace OnlineQuiz.Services
     public class CourseService : ICourseService
     {
         private readonly ICourseRepository _repo;
-        public CourseService(ICourseRepository repo) => _repo = repo;
 
-        public Task<ServiceResponse<IEnumerable<CourseDto>>> GetAllCoursesAsync() => _repo.GetAllCoursesAsync();
-        public Task<ServiceResponse<CourseDto>> GetCourseByIdAsync(long id) => _repo.GetCourseByIdAsync(id);
-        public Task<ServiceResponse<CourseDto>> GetCourseByCodeAsync(string code) => _repo.GetCourseByCodeAsync(code);
-        public Task<ServiceResponse<CourseDto>> CreateCourseAsync(CreateCourseDto dto) => _repo.CreateCourseAsync(dto);
-        public Task<ServiceResponse<CourseDto>> UpdateCourseAsync(long id, UpdateCourseDto dto) => _repo.UpdateCourseAsync(id, dto);
-        public Task<ServiceResponse> DeleteCourseAsync(long id) => _repo.DeleteCourseAsync(id);
+        public CourseService(ICourseRepository repo)
+        {
+            _repo = repo;
+        }
+
+        public async Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetAllCoursesAsync() =>
+            await _repo.GetAllCoursesAsync();
+
+        public async Task<ServiceResponse<CourseDTO.CourseDto>> GetCourseByIdAsync(long id) =>
+            await _repo.GetCourseByIdAsync(id);
+
+        public async Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto) =>
+            await _repo.CreateCourseAsync(dto);
+
+        public async Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto) =>
+            await _repo.UpdateCourseAsync(id, dto);
+
+        public async Task<ServiceResponse<bool>> DeleteCourseAsync(long id) =>
+            await _repo.DeleteCourseAsync(id);
     }
 }
