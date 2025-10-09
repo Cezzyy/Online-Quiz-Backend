@@ -75,14 +75,13 @@ namespace OnlineQuiz.Tests.Utilities
         }
 
         [Fact]
-        public void GenerateToken_WithShortSecret_StillValidates()
+        public void GenerateToken_WithShortSecret_ThrowsDueToWeakKey()
         {
             var settings = CreateSettings(secretOverride: "short");
             var user = CreateUser();
-            var token = JwtTokenHelper.GenerateToken(user, Array.Empty<string>(), settings);
+            var roles = Array.Empty<string>();
 
-            var principal = JwtTokenHelper.ValidateToken(token, settings);
-            Assert.NotNull(principal);
+            Assert.ThrowsAny<Exception>(() => JwtTokenHelper.GenerateToken(user, roles, settings));
         }
     }
 }

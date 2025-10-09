@@ -20,9 +20,7 @@ namespace OnlineQuiz.Utilities
         public static string GenerateToken(UserModel user, IEnumerable<string> roles, JwtSettings jwtSettings)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var rawKey = Encoding.UTF8.GetBytes(jwtSettings.SecretKey ?? string.Empty);
-            // Ensure consistent key length (at least 256 bits) for HMAC-SHA256
-            var keyBytes = rawKey.Length < 32 ? SHA256.HashData(rawKey) : rawKey;
+            var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 
             var claims = new List<Claim>
             {
@@ -44,7 +42,7 @@ namespace OnlineQuiz.Utilities
                 Expires = DateTime.UtcNow.AddMinutes(jwtSettings.AccessTokenExpirationInMinutes),
                 Issuer = jwtSettings.Issuer,
                 Audience = jwtSettings.Audience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -72,8 +70,7 @@ namespace OnlineQuiz.Utilities
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var rawKey = Encoding.UTF8.GetBytes(jwtSettings.SecretKey ?? string.Empty);
-                var keyBytes = rawKey.Length < 32 ? SHA256.HashData(rawKey) : rawKey;
+                var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 
                 var validationParameters = new TokenValidationParameters
                 {
@@ -83,7 +80,7 @@ namespace OnlineQuiz.Utilities
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings.Issuer,
                     ValidAudience = jwtSettings.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
                     ClockSkew = TimeSpan.Zero
                 };
 
