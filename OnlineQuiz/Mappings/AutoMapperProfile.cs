@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using OnlineQuiz.DTOs;
 using OnlineQuiz.Models;
 
@@ -20,7 +20,28 @@ namespace OnlineQuiz.Mappings
             CreateMap<UpdateUserDto, UserModel>()
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
-            
+
+
+            CreateMap<CourseModel, CourseDTO.CourseDto>()
+                .ForMember(dest => dest.InstructorName,
+                    opt => opt.MapFrom(src =>
+                        src.Instructor != null && src.Instructor.User != null
+                            ? src.Instructor.User.FullName
+                            : "N/A"));
+
+            // Create DTO → Entity
+            CreateMap<CourseDTO.CreateCourseDto, CourseModel>()
+                .ForMember(dest => dest.CourseId, opt => opt.Ignore())
+                .ForMember(dest => dest.Instructor, opt => opt.Ignore());
+
+            // Update DTO → Entity
+            CreateMap<CourseDTO.UpdateCourseDto, CourseModel>()
+                .ForMember(dest => dest.CourseId, opt => opt.Ignore())
+                .ForMember(dest => dest.Instructor, opt => opt.Ignore())
+                .ForAllMembers(opt =>
+                    opt.Condition((src, dest, srcMember) =>
+                        srcMember != null && !string.IsNullOrEmpty(srcMember?.ToString())));
+
             // Teacher mappings
             CreateMap<TeacherModel, TeacherDto>();
             CreateMap<CreateTeacherDto, TeacherModel>();

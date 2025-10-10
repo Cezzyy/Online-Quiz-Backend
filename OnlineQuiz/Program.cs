@@ -17,6 +17,8 @@ using DotNetEnv;
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 
 // Add services to the container.
 builder.Services.AddControllers()

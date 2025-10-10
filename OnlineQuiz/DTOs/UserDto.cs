@@ -1,3 +1,5 @@
+using OnlineQuiz.Models;
+
 namespace OnlineQuiz.DTOs
 {
     public class UserDto
@@ -121,6 +123,4 @@ namespace OnlineQuiz.DTOs
         public string? Section { get; set; }
         public string? Course { get; set; }
     }
-
-
 }
