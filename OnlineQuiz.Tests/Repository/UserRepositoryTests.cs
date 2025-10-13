@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,6 +19,29 @@ namespace OnlineQuiz.Tests.Repository
 {
     public class UserRepositoryTests
     {
+        private static readonly Lazy<IMapper> CachedMapper = new(() =>
+        {
+            var loggerFactory = LoggerFactory.Create(builder => { builder.ClearProviders(); builder.SetMinimumLevel(LogLevel.Critical); });
+            var config = new MapperConfiguration(cfg => { cfg.AddProfile<AutoMapperProfile>(); }, loggerFactory);
+            return config.CreateMapper();
+        });
+
+        private static readonly Lazy<IOptions<JwtSettings>> CachedJwtOptions = new(() =>
+        {
+            return Options.Create(new JwtSettings
+            {
+                SecretKey = "super-secret-key-for-tests-1234567890-0987654321",
+                Issuer = "OnlineQuizAPI",
+                Audience = "OnlineQuizUsers",
+                AccessTokenExpirationInMinutes = 10,
+                RefreshTokenExpirationInDays = 7
+            });
+        });
+
+        private static readonly ConcurrentDictionary<string, string> HashCache = new();
+        private static string LowCostHash(string password)
+            => HashCache.GetOrAdd(password, p => BCrypt.Net.BCrypt.HashPassword(p, BCrypt.Net.BCrypt.GenerateSalt(4)));
+
         private static OnlineQuizDbContext CreateDbContext()
         {
             var options = new DbContextOptionsBuilder<OnlineQuizDbContext>()
@@ -28,21 +52,12 @@ namespace OnlineQuiz.Tests.Repository
 
         private static IMapper CreateMapper()
         {
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug().AddConsole());
-            var config = new MapperConfiguration(cfg => { cfg.AddProfile<AutoMapperProfile>(); }, loggerFactory);
-            return config.CreateMapper();
+            return CachedMapper.Value;
         }
 
         private static IOptions<JwtSettings> CreateJwtOptions()
         {
-            return Options.Create(new JwtSettings
-            {
-                SecretKey = "super-secret-key-for-tests-1234567890-0987654321",
-                Issuer = "OnlineQuizAPI",
-                Audience = "OnlineQuizUsers",
-                AccessTokenExpirationInMinutes = 10,
-                RefreshTokenExpirationInDays = 7
-            });
+            return CachedJwtOptions.Value;
         }
 
         private static RoleModel SeedRole(OnlineQuizDbContext context, string name, short id)
@@ -64,7 +79,8 @@ namespace OnlineQuiz.Tests.Repository
             var user = new UserModel
             {
                 Email = email,
-                PasswordHash = OnlineQuiz.Utilities.PasswordHelper.HashPassword(plainPassword),
+                // Use cached low-cost BCrypt for tests to avoid slow hashing
+                PasswordHash = LowCostHash(plainPassword),
                 FullName = fullName,
                 Status = status
             };

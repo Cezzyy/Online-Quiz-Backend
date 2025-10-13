@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -19,14 +20,14 @@ namespace OnlineQuiz.Tests.Repository
 {
     public class LoginRepositoryTests
     {
-        private static IMapper CreateMapper()
+        private static readonly Lazy<IMapper> CachedMapper = new(() =>
         {
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug().AddConsole());
+            var loggerFactory = LoggerFactory.Create(builder => { builder.ClearProviders(); builder.SetMinimumLevel(LogLevel.Critical); });
             var config = new MapperConfiguration(cfg => { cfg.AddProfile<AutoMapperProfile>(); }, loggerFactory);
             return config.CreateMapper();
-        }
+        });
 
-        private static IOptions<JwtSettings> CreateJwtOptions()
+        private static readonly Lazy<IOptions<JwtSettings>> CachedJwtOptions = new(() =>
         {
             var settings = new JwtSettings
             {
@@ -37,6 +38,20 @@ namespace OnlineQuiz.Tests.Repository
                 RefreshTokenExpirationInDays = 7
             };
             return Options.Create(settings);
+        });
+
+        private static readonly ConcurrentDictionary<string, string> HashCache = new();
+        private static string LowCostHash(string password)
+            => HashCache.GetOrAdd(password, p => BCrypt.Net.BCrypt.HashPassword(p, BCrypt.Net.BCrypt.GenerateSalt(4)));
+
+        private static IMapper CreateMapper()
+        {
+            return CachedMapper.Value;
+        }
+
+        private static IOptions<JwtSettings> CreateJwtOptions()
+        {
+            return CachedJwtOptions.Value;
         }
 
         private static OnlineQuizDbContext CreateContext(string dbName)
@@ -50,7 +65,8 @@ namespace OnlineQuiz.Tests.Repository
         private static async Task SeedUserWithRoleAsync(OnlineQuizDbContext context, long userId, string email, string fullName, string passwordPlain, string status, short roleId, string roleName)
         {
             var role = new RoleModel { RoleId = roleId, Name = roleName };
-            var hashed = PasswordHelper.HashPassword(passwordPlain);
+            // Use cached low-cost BCrypt for tests to speed up hashing
+            var hashed = LowCostHash(passwordPlain);
             var user = new UserModel
             {
                 UserId = userId,

@@ -17,7 +17,7 @@ namespace OnlineQuiz.Tests.Repository
     {
         private static IMapper CreateMapper()
         {
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug().AddConsole());
+            var loggerFactory = LoggerFactory.Create(builder => { builder.ClearProviders(); builder.SetMinimumLevel(LogLevel.Critical); });
             var config = new MapperConfiguration(cfg => { cfg.AddProfile<AutoMapperProfile>(); }, loggerFactory);
             return config.CreateMapper();
         }
