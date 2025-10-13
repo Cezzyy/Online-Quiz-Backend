@@ -61,6 +61,40 @@ namespace OnlineQuiz.Mappings
             CreateMap<StudentModel, StudentDto>();
             CreateMap<CreateStudentDto, StudentModel>();
 
+            // Quiz mappings
+            CreateMap<QuizModel, QuizDTO.QuizDto>()
+                .ForMember(dest => dest.CourseName,
+                    opt => opt.MapFrom(src =>
+                        src.Course != null
+                            ? src.Course.Name
+                            : "N/A"))
+                .ForMember(dest => dest.QuestionsCount,
+                    opt => opt.MapFrom(src => src.Questions.Count))
+                .ForMember(dest => dest.AttemptsCount,
+                    opt => opt.MapFrom(src => src.Attempts.Count));
+
+            // Create DTO → Entity
+            CreateMap<QuizDTO.CreateQuizDto, QuizModel>()
+                .ForMember(dest => dest.QuizId, opt => opt.Ignore())
+                .ForMember(dest => dest.Course, opt => opt.Ignore())
+                .ForMember(dest => dest.Questions, opt => opt.Ignore())
+                .ForMember(dest => dest.Attempts, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+            // Update DTO → Entity
+            CreateMap<QuizDTO.UpdateQuizDto, QuizModel>()
+                .ForMember(dest => dest.QuizId, opt => opt.Ignore())
+                .ForMember(dest => dest.CourseId, opt => opt.Ignore())
+                .ForMember(dest => dest.Course, opt => opt.Ignore())
+                .ForMember(dest => dest.Questions, opt => opt.Ignore())
+                .ForMember(dest => dest.Attempts, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForAllMembers(opt =>
+                    opt.Condition((src, dest, srcMember) =>
+                        srcMember != null && !string.IsNullOrEmpty(srcMember?.ToString())));
+
             // Role mappings
             CreateMap<RoleModel, string>().ConvertUsing(src => src.Name);
         }
