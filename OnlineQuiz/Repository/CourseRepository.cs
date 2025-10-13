@@ -28,6 +28,7 @@ namespace OnlineQuiz.Repository
                 var courses = await _context.Courses
                     .Include(c => c.Instructor)
                     .ThenInclude(t => t.User)
+                    .Include(c => c.Creator)
                     .ToListAsync();
 
                 response.Data = _mapper.Map<IEnumerable<CourseDTO.CourseDto>>(courses);
@@ -49,6 +50,7 @@ namespace OnlineQuiz.Repository
             var course = await _context.Courses
                 .Include(c => c.Instructor)
                 .ThenInclude(t => t.User)
+                .Include(c => c.Creator)
                 .FirstOrDefaultAsync(c => c.CourseId == id);
 
             if (course == null)
@@ -62,16 +64,35 @@ namespace OnlineQuiz.Repository
             return response;
         }
 
-        public async Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto)
+        public async Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto, long createdByUserId)
         {
             var response = new ServiceResponse<CourseDTO.CourseDto>();
 
-            var model = _mapper.Map<CourseModel>(dto);
-            _context.Courses.Add(model);
-            await _context.SaveChangesAsync();
+            try
+            {
+                var model = _mapper.Map<CourseModel>(dto);
+                model.CreatedBy = createdByUserId;
+                model.CreatedAt = DateTime.UtcNow;
+                model.UpdatedAt = DateTime.UtcNow;
 
-            response.Data = _mapper.Map<CourseDTO.CourseDto>(model);
-            response.Message = "Course created successfully.";
+                _context.Courses.Add(model);
+                await _context.SaveChangesAsync();
+
+                // Reload with navigation properties
+                var createdCourse = await _context.Courses
+                    .Include(c => c.Instructor)
+                    .ThenInclude(t => t.User)
+                    .Include(c => c.Creator)
+                    .FirstOrDefaultAsync(c => c.CourseId == model.CourseId);
+
+                response.Data = _mapper.Map<CourseDTO.CourseDto>(createdCourse);
+                response.Message = "Course created successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error creating course: {ex.Message}";
+            }
 
             return response;
         }
@@ -79,23 +100,43 @@ namespace OnlineQuiz.Repository
         public async Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto)
         {
             var response = new ServiceResponse<CourseDTO.CourseDto>();
-            var course = await _context.Courses.FindAsync(id);
+            
+            try
+            {
+                var course = await _context.Courses.FindAsync(id);
 
-            if (course == null)
+                if (course == null)
+                {
+                    response.Success = false;
+                    response.Message = "Course not found.";
+                    return response;
+                }
+
+                if (!string.IsNullOrWhiteSpace(dto.Code)) course.Code = dto.Code;
+                if (!string.IsNullOrWhiteSpace(dto.Name)) course.Name = dto.Name;
+                if (dto.InstructorUserId.HasValue) course.InstructorUserId = dto.InstructorUserId.Value;
+                if (!string.IsNullOrWhiteSpace(dto.Status)) course.Status = dto.Status;
+                if (dto.Category != null) course.Category = dto.Category;
+                
+                course.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                // Reload with navigation properties
+                var updatedCourse = await _context.Courses
+                    .Include(c => c.Instructor)
+                    .ThenInclude(t => t.User)
+                    .Include(c => c.Creator)
+                    .FirstOrDefaultAsync(c => c.CourseId == id);
+
+                response.Data = _mapper.Map<CourseDTO.CourseDto>(updatedCourse);
+                response.Message = "Course updated successfully.";
+            }
+            catch (Exception ex)
             {
                 response.Success = false;
-                response.Message = "Course not found.";
-                return response;
+                response.Message = $"Error updating course: {ex.Message}";
             }
-
-            if (!string.IsNullOrWhiteSpace(dto.Code)) course.Code = dto.Code;
-            if (!string.IsNullOrWhiteSpace(dto.Name)) course.Name = dto.Name;
-            if (dto.InstructorUserId.HasValue) course.InstructorUserId = dto.InstructorUserId.Value;
-
-            await _context.SaveChangesAsync();
-
-            response.Data = _mapper.Map<CourseDTO.CourseDto>(course);
-            response.Message = "Course updated successfully.";
 
             return response;
         }
@@ -103,20 +144,196 @@ namespace OnlineQuiz.Repository
         public async Task<ServiceResponse<bool>> DeleteCourseAsync(long id)
         {
             var response = new ServiceResponse<bool>();
-            var course = await _context.Courses.FindAsync(id);
+            
+            try
+            {
+                var course = await _context.Courses.FindAsync(id);
 
-            if (course == null)
+                if (course == null)
+                {
+                    response.Success = false;
+                    response.Message = "Course not found.";
+                    return response;
+                }
+
+                _context.Courses.Remove(course);
+                await _context.SaveChangesAsync();
+
+                response.Data = true;
+                response.Message = "Course deleted successfully.";
+            }
+            catch (Exception ex)
             {
                 response.Success = false;
-                response.Message = "Course not found.";
-                return response;
+                response.Message = $"Error deleting course: {ex.Message}";
             }
 
-            _context.Courses.Remove(course);
-            await _context.SaveChangesAsync();
+            return response;
+        }
 
-            response.Data = true;
-            response.Message = "Course deleted successfully.";
+        public async Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetCoursesByInstructorAsync(long instructorId)
+        {
+            var response = new ServiceResponse<IEnumerable<CourseDTO.CourseDto>>();
+
+            try
+            {
+                var courses = await _context.Courses
+                    .Include(c => c.Instructor)
+                    .ThenInclude(t => t.User)
+                    .Include(c => c.Creator)
+                    .Where(c => c.InstructorUserId == instructorId)
+                    .ToListAsync();
+
+                response.Data = _mapper.Map<IEnumerable<CourseDTO.CourseDto>>(courses);
+                response.Message = "Instructor courses retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving instructor courses: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetEnrolledCoursesByStudentAsync(long studentId)
+        {
+            var response = new ServiceResponse<IEnumerable<CourseDTO.CourseDto>>();
+
+            try
+            {
+                var courses = await _context.Enrollments
+                    .Include(e => e.Course)
+                    .ThenInclude(c => c.Instructor)
+                    .ThenInclude(t => t.User)
+                    .Include(e => e.Course)
+                    .ThenInclude(c => c.Creator)
+                    .Where(e => e.UserId == studentId)
+                    .Select(e => e.Course)
+                    .ToListAsync();
+
+                response.Data = _mapper.Map<IEnumerable<CourseDTO.CourseDto>>(courses);
+                response.Message = "Student enrolled courses retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving student courses: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<IEnumerable<StudentDto>>> GetCourseStudentsAsync(long courseId)
+        {
+            var response = new ServiceResponse<IEnumerable<StudentDto>>();
+
+            try
+            {
+                var students = await _context.Enrollments
+                    .Include(e => e.User)
+                    .ThenInclude(u => u.Student)
+                    .Where(e => e.CourseId == courseId)
+                    .Select(e => e.User.Student)
+                    .Where(s => s != null)
+                    .ToListAsync();
+
+                response.Data = _mapper.Map<IEnumerable<StudentDto>>(students);
+                response.Message = "Course students retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving course students: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<bool>> EnrollStudentInCourseAsync(long courseId, long studentId)
+        {
+            var response = new ServiceResponse<bool>();
+
+            try
+            {
+                // Check if enrollment already exists
+                var existingEnrollment = await _context.Enrollments
+                    .FirstOrDefaultAsync(e => e.CourseId == courseId && e.UserId == studentId);
+
+                if (existingEnrollment != null)
+                {
+                    response.Success = false;
+                    response.Message = "Student is already enrolled in this course.";
+                    return response;
+                }
+
+                // Check if course exists
+                var course = await _context.Courses.FindAsync(courseId);
+                if (course == null)
+                {
+                    response.Success = false;
+                    response.Message = "Course not found.";
+                    return response;
+                }
+
+                // Check if student exists
+                var student = await _context.Users.FindAsync(studentId);
+                if (student == null)
+                {
+                    response.Success = false;
+                    response.Message = "Student not found.";
+                    return response;
+                }
+
+                var enrollment = new EnrollmentModel
+                {
+                    CourseId = courseId,
+                    UserId = studentId,
+                    EnrolledAt = DateTime.UtcNow
+                };
+
+                _context.Enrollments.Add(enrollment);
+                await _context.SaveChangesAsync();
+
+                response.Data = true;
+                response.Message = "Student enrolled successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error enrolling student: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<bool>> UnenrollStudentFromCourseAsync(long courseId, long studentId)
+        {
+            var response = new ServiceResponse<bool>();
+
+            try
+            {
+                var enrollment = await _context.Enrollments
+                    .FirstOrDefaultAsync(e => e.CourseId == courseId && e.UserId == studentId);
+
+                if (enrollment == null)
+                {
+                    response.Success = false;
+                    response.Message = "Enrollment not found.";
+                    return response;
+                }
+
+                _context.Enrollments.Remove(enrollment);
+                await _context.SaveChangesAsync();
+
+                response.Data = true;
+                response.Message = "Student unenrolled successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error unenrolling student: {ex.Message}";
+            }
 
             return response;
         }

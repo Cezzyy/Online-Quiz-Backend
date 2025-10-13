@@ -27,6 +27,8 @@ namespace OnlineQuiz.DTOs
             public string Code { get; set; } = string.Empty;
             public string Name { get; set; } = string.Empty;
             public long InstructorUserId { get; set; }
+            public string Status { get; set; } = "Active";
+            public string? Category { get; set; }
         }
 
         public class UpdateCourseDto
@@ -34,6 +36,8 @@ namespace OnlineQuiz.DTOs
             public string? Code { get; set; }
             public string? Name { get; set; }
             public long? InstructorUserId { get; set; }
+            public string? Status { get; set; }
+            public string? Category { get; set; }
         }
 
         public class CourseDto
@@ -43,6 +47,12 @@ namespace OnlineQuiz.DTOs
             public string Name { get; set; } = string.Empty;
             public long InstructorUserId { get; set; }
             public string? InstructorName { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public string? Category { get; set; }
+            public DateTime CreatedAt { get; set; }
+            public DateTime UpdatedAt { get; set; }
+            public long CreatedBy { get; set; }
+            public string? CreatedByName { get; set; }
         }
     }
 }

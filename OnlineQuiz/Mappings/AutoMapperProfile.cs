@@ -27,17 +27,28 @@ namespace OnlineQuiz.Mappings
                     opt => opt.MapFrom(src =>
                         src.Instructor != null && src.Instructor.User != null
                             ? src.Instructor.User.FullName
+                            : "N/A"))
+                .ForMember(dest => dest.CreatedByName,
+                    opt => opt.MapFrom(src =>
+                        src.Creator != null
+                            ? src.Creator.FullName
                             : "N/A"));
 
             // Create DTO → Entity
             CreateMap<CourseDTO.CreateCourseDto, CourseModel>()
                 .ForMember(dest => dest.CourseId, opt => opt.Ignore())
-                .ForMember(dest => dest.Instructor, opt => opt.Ignore());
+                .ForMember(dest => dest.Instructor, opt => opt.Ignore())
+                .ForMember(dest => dest.Creator, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
             // Update DTO → Entity
             CreateMap<CourseDTO.UpdateCourseDto, CourseModel>()
                 .ForMember(dest => dest.CourseId, opt => opt.Ignore())
                 .ForMember(dest => dest.Instructor, opt => opt.Ignore())
+                .ForMember(dest => dest.Creator, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForAllMembers(opt =>
                     opt.Condition((src, dest, srcMember) =>
                         srcMember != null && !string.IsNullOrEmpty(srcMember?.ToString())));

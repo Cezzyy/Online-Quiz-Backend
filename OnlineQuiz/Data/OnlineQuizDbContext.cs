@@ -100,6 +100,13 @@ namespace OnlineQuiz.Data
                 .HasForeignKey(c => c.InstructorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure Course-Creator relationship
+            modelBuilder.Entity<CourseModel>()
+                .HasOne(c => c.Creator)
+                .WithMany()
+                .HasForeignKey(c => c.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Configure Enrollment-Course relationship
             modelBuilder.Entity<EnrollmentModel>()
                 .HasOne(e => e.Course)
