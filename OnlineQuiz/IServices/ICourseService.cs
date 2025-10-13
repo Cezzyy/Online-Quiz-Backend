@@ -8,8 +8,8 @@ namespace OnlineQuiz.IServices
         Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetAllCoursesAsync();
         Task<ServiceResponse<CourseDTO.CourseDto>> GetCourseByIdAsync(long id);
         Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto, long createdByUserId);
-        Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto);
-        Task<ServiceResponse<bool>> DeleteCourseAsync(long id);
+        Task<ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto);
+        Task<ServiceResponse<(bool Deleted, object CourseInfo)>> DeleteCourseAsync(long id);
         
         // New methods for course management workflow
         Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetCoursesByInstructorAsync(long instructorId);

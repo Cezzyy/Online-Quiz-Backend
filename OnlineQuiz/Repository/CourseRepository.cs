@@ -97,9 +97,9 @@ namespace OnlineQuiz.Repository
             return response;
         }
 
-        public async Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto)
+        public async Task<ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto)
         {
-            var response = new ServiceResponse<CourseDTO.CourseDto>();
+            var response = new ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>();
             
             try
             {
@@ -111,6 +111,16 @@ namespace OnlineQuiz.Repository
                     response.Message = "Course not found.";
                     return response;
                 }
+
+                // Capture old values for logging
+                var oldValues = new
+                {
+                    course.Code,
+                    course.Name,
+                    course.InstructorUserId,
+                    course.Status,
+                    course.Category
+                };
 
                 if (!string.IsNullOrWhiteSpace(dto.Code)) course.Code = dto.Code;
                 if (!string.IsNullOrWhiteSpace(dto.Name)) course.Name = dto.Name;
@@ -129,7 +139,8 @@ namespace OnlineQuiz.Repository
                     .Include(c => c.Creator)
                     .FirstOrDefaultAsync(c => c.CourseId == id);
 
-                response.Data = _mapper.Map<CourseDTO.CourseDto>(updatedCourse);
+                var courseDto = _mapper.Map<CourseDTO.CourseDto>(updatedCourse);
+                response.Data = (courseDto, oldValues);
                 response.Message = "Course updated successfully.";
             }
             catch (Exception ex)
@@ -141,9 +152,9 @@ namespace OnlineQuiz.Repository
             return response;
         }
 
-        public async Task<ServiceResponse<bool>> DeleteCourseAsync(long id)
+        public async Task<ServiceResponse<(bool Deleted, object CourseInfo)>> DeleteCourseAsync(long id)
         {
-            var response = new ServiceResponse<bool>();
+            var response = new ServiceResponse<(bool Deleted, object CourseInfo)>();
             
             try
             {
@@ -156,10 +167,24 @@ namespace OnlineQuiz.Repository
                     return response;
                 }
 
+                // Capture course info for logging before deletion
+                var courseInfo = new
+                {
+                    course.CourseId,
+                    course.Code,
+                    course.Name,
+                    course.InstructorUserId,
+                    course.Status,
+                    course.Category,
+                    course.CreatedAt,
+                    course.UpdatedAt,
+                    course.CreatedBy
+                };
+
                 _context.Courses.Remove(course);
                 await _context.SaveChangesAsync();
 
-                response.Data = true;
+                response.Data = (true, courseInfo);
                 response.Message = "Course deleted successfully.";
             }
             catch (Exception ex)

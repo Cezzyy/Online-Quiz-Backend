@@ -23,10 +23,10 @@ namespace OnlineQuiz.Services
         public async Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto, long createdByUserId) =>
             await _repo.CreateCourseAsync(dto, createdByUserId);
 
-        public async Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto) =>
+        public async Task<ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto) =>
             await _repo.UpdateCourseAsync(id, dto);
 
-        public async Task<ServiceResponse<bool>> DeleteCourseAsync(long id) =>
+        public async Task<ServiceResponse<(bool Deleted, object CourseInfo)>> DeleteCourseAsync(long id) =>
             await _repo.DeleteCourseAsync(id);
 
         // New methods for course management workflow
