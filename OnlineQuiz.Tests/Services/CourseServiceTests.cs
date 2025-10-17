@@ -72,17 +72,20 @@ namespace OnlineQuiz.Tests.Services
             var createDto = new CourseDTO.CreateCourseDto { Code = "PHY101", Name = "Physics I", InstructorUserId = 20 };
             var created = new CourseDTO.CourseDto { CourseId = 100, Code = createDto.Code, Name = createDto.Name, InstructorUserId = createDto.InstructorUserId };
             var expectedResponse = new ServiceResponse<CourseDTO.CourseDto>(created);
-            mockRepo.Setup(r => r.CreateCourseAsync(It.IsAny<CourseDTO.CreateCourseDto>()))
+            mockRepo.Setup(r => r.CreateCourseAsync(It.IsAny<CourseDTO.CreateCourseDto>(), It.IsAny<long>()))
                     .ReturnsAsync(expectedResponse);
 
             var service = CreateService(mockRepo);
 
             // Act
-            var result = await service.CreateCourseAsync(createDto);
+            var result = await service.CreateCourseAsync(createDto, 1L);
 
             // Assert
             Assert.Same(expectedResponse, result);
-            mockRepo.Verify(r => r.CreateCourseAsync(It.Is<CourseDTO.CreateCourseDto>(d => d.Code == "PHY101" && d.Name == "Physics I" && d.InstructorUserId == 20)), Times.Once);
+            mockRepo.Verify(r => r.CreateCourseAsync(
+                It.Is<CourseDTO.CreateCourseDto>(d => d.Code == "PHY101" && d.Name == "Physics I" && d.InstructorUserId == 20),
+                It.Is<long>(id => id == 1L)
+            ), Times.Once);
             Assert.True(result.Success);
             Assert.NotNull(result.Data);
             Assert.Equal(100, result.Data!.CourseId);
@@ -95,7 +98,7 @@ namespace OnlineQuiz.Tests.Services
             var mockRepo = new Mock<ICourseRepository>();
             var updateDto = new CourseDTO.UpdateCourseDto { Name = "Advanced Physics" };
             var updated = new CourseDTO.CourseDto { CourseId = 200, Code = "PHY201", Name = "Advanced Physics", InstructorUserId = 21 };
-            var expectedResponse = new ServiceResponse<CourseDTO.CourseDto>(updated);
+            var expectedResponse = new ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>((updated, new { Name = "Old Name" }));
             mockRepo.Setup(r => r.UpdateCourseAsync(200, It.IsAny<CourseDTO.UpdateCourseDto>()))
                     .ReturnsAsync(expectedResponse);
 
@@ -108,8 +111,8 @@ namespace OnlineQuiz.Tests.Services
             Assert.Same(expectedResponse, result);
             mockRepo.Verify(r => r.UpdateCourseAsync(200, It.Is<CourseDTO.UpdateCourseDto>(d => d.Name == "Advanced Physics")), Times.Once);
             Assert.True(result.Success);
-            Assert.NotNull(result.Data);
-            Assert.Equal(200, result.Data!.CourseId);
+            Assert.NotNull(result.Data.UpdatedCourse);
+            Assert.Equal(200, result.Data!.UpdatedCourse.CourseId);
         }
 
         [Fact]
@@ -117,7 +120,7 @@ namespace OnlineQuiz.Tests.Services
         {
             // Arrange
             var mockRepo = new Mock<ICourseRepository>();
-            var expectedResponse = new ServiceResponse<bool>(true);
+            var expectedResponse = new ServiceResponse<(bool Deleted, object CourseInfo)>((true, new { CourseId = 300, Code = "BIO101", Name = "Biology" }));
             mockRepo.Setup(r => r.DeleteCourseAsync(300)).ReturnsAsync(expectedResponse);
 
             var service = CreateService(mockRepo);
@@ -129,7 +132,7 @@ namespace OnlineQuiz.Tests.Services
             Assert.Same(expectedResponse, result);
             mockRepo.Verify(r => r.DeleteCourseAsync(300), Times.Once);
             Assert.True(result.Success);
-            Assert.True(result.Data is true);
+            Assert.True(result.Data!.Deleted);
         }
 
         [Fact]

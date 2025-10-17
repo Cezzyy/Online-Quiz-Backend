@@ -15,11 +15,11 @@ using Xunit;
 
 namespace OnlineQuiz.Tests.Controllers
 {
-    public class CourseControllerTests
+    public class QuizControllerTests
     {
-        private static CourseController CreateController(Mock<ICourseService> mockService, Mock<IActivityLogService>? mockActivityLog = null)
+        private static QuizController CreateController(Mock<IQuizService> mockService, Mock<IActivityLogService>? mockActivityLog = null)
         {
-            var controller = new CourseController(mockService.Object, (mockActivityLog ?? new Mock<IActivityLogService>()).Object);
+            var controller = new QuizController(mockService.Object, (mockActivityLog ?? new Mock<IActivityLogService>()).Object);
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
@@ -36,124 +36,106 @@ namespace OnlineQuiz.Tests.Controllers
         [Fact]
         public async Task GetAll_ReturnsOk_WithServiceResponse()
         {
-            // Arrange
-            var mockService = new Mock<ICourseService>();
-            var expectedCourses = new List<CourseDTO.CourseDto>
+            var mockService = new Mock<IQuizService>();
+            var quizzes = new List<QuizDTO.QuizDto>
             {
-                new CourseDTO.CourseDto { CourseId = 1, Code = "CS101", Name = "Intro CS", InstructorUserId = 10, InstructorName = "Prof. A" },
-                new CourseDTO.CourseDto { CourseId = 2, Code = "CS102", Name = "Data Structures", InstructorUserId = 11, InstructorName = "Prof. B" }
+                new QuizDTO.QuizDto { QuizId = 1, CourseId = 10, Title = "Quiz A" },
+                new QuizDTO.QuizDto { QuizId = 2, CourseId = 11, Title = "Quiz B" }
             };
-            var expectedResponse = new ServiceResponse<IEnumerable<CourseDTO.CourseDto>>(expectedCourses);
-            mockService.Setup(s => s.GetAllCoursesAsync()).ReturnsAsync(expectedResponse);
+            var expected = new ServiceResponse<IEnumerable<QuizDTO.QuizDto>>(quizzes);
+            mockService.Setup(s => s.GetAllQuizzesAsync()).ReturnsAsync(expected);
 
             var controller = CreateController(mockService);
 
-            // Act
             var result = await controller.GetAll();
 
-            // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
-            var payload = Assert.IsType<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>>(ok.Value);
+            var payload = Assert.IsType<ServiceResponse<IEnumerable<QuizDTO.QuizDto>>>(ok.Value);
             Assert.True(payload.Success);
             Assert.NotNull(payload.Data);
             Assert.Equal(2, payload.Data!.Count());
-            Assert.Contains(payload.Data!, c => c.Code == "CS101" && c.Name == "Intro CS");
-            Assert.Contains(payload.Data!, c => c.Code == "CS102" && c.Name == "Data Structures");
+            Assert.Contains(payload.Data!, q => q.Title == "Quiz A");
+            Assert.Contains(payload.Data!, q => q.Title == "Quiz B");
         }
 
         [Fact]
-        public async Task GetById_ReturnsOk_WithRequestedCourse()
+        public async Task GetById_ReturnsOk_WithRequestedQuiz()
         {
-            // Arrange
-            var mockService = new Mock<ICourseService>();
-            var expectedCourse = new CourseDTO.CourseDto { CourseId = 5, Code = "MATH201", Name = "Linear Algebra", InstructorUserId = 15, InstructorName = "Prof. L" };
-            var expectedResponse = new ServiceResponse<CourseDTO.CourseDto>(expectedCourse);
-            mockService.Setup(s => s.GetCourseByIdAsync(5)).ReturnsAsync(expectedResponse);
+            var mockService = new Mock<IQuizService>();
+            var quiz = new QuizDTO.QuizDto { QuizId = 5, CourseId = 20, Title = "Midterm" };
+            var expected = new ServiceResponse<QuizDTO.QuizDto>(quiz);
+            mockService.Setup(s => s.GetQuizByIdAsync(5)).ReturnsAsync(expected);
 
             var controller = CreateController(mockService);
 
-            // Act
             var result = await controller.GetById(5);
 
-            // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
-            var payload = Assert.IsType<ServiceResponse<CourseDTO.CourseDto>>(ok.Value);
+            var payload = Assert.IsType<ServiceResponse<QuizDTO.QuizDto>>(ok.Value);
             Assert.True(payload.Success);
             Assert.NotNull(payload.Data);
-            Assert.Equal(5, payload.Data!.CourseId);
-            Assert.Equal("MATH201", payload.Data!.Code);
-            Assert.Equal("Linear Algebra", payload.Data!.Name);
-            Assert.Equal(15, payload.Data!.InstructorUserId);
+            Assert.Equal(5, payload.Data!.QuizId);
+            Assert.Equal("Midterm", payload.Data!.Title);
         }
 
         [Fact]
-        public async Task Create_ReturnsOk_WithCreatedCourse()
+        public async Task Create_ReturnsOk_WithCreatedQuiz()
         {
-            // Arrange
-            var mockService = new Mock<ICourseService>();
-            var createDto = new CourseDTO.CreateCourseDto { Code = "PHY101", Name = "Physics I", InstructorUserId = 20 };
-            var createdCourse = new CourseDTO.CourseDto { CourseId = 100, Code = createDto.Code, Name = createDto.Name, InstructorUserId = createDto.InstructorUserId, InstructorName = "Prof. P" };
-            var expectedResponse = new ServiceResponse<CourseDTO.CourseDto>(createdCourse);
-            mockService.Setup(s => s.CreateCourseAsync(It.IsAny<CourseDTO.CreateCourseDto>(), It.IsAny<long>()))
-                       .ReturnsAsync(expectedResponse);
+            var mockService = new Mock<IQuizService>();
+            var createDto = new QuizDTO.CreateQuizDto { CourseId = 10, Title = "Final" };
+            var created = new QuizDTO.QuizDto { QuizId = 100, CourseId = 10, Title = "Final" };
+            var expected = new ServiceResponse<QuizDTO.QuizDto>(created);
+            mockService.Setup(s => s.CreateQuizAsync(It.IsAny<QuizDTO.CreateQuizDto>(), It.IsAny<long>()))
+                       .ReturnsAsync(expected);
 
             var controller = CreateController(mockService);
 
-            // Act
             var result = await controller.Create(createDto);
 
-            // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
-            var payload = Assert.IsType<ServiceResponse<CourseDTO.CourseDto>>(ok.Value);
+            var payload = Assert.IsType<ServiceResponse<QuizDTO.QuizDto>>(ok.Value);
             Assert.True(payload.Success);
             Assert.NotNull(payload.Data);
-            Assert.Equal(100, payload.Data!.CourseId);
-            Assert.Equal("PHY101", payload.Data!.Code);
-            Assert.Equal("Physics I", payload.Data!.Name);
+            Assert.Equal(100, payload.Data!.QuizId);
+            Assert.Equal("Final", payload.Data!.Title);
         }
 
         [Fact]
-        public async Task Update_ReturnsOk_WithUpdatedCourse()
+        public async Task Update_ReturnsOk_WithUpdatedQuiz()
         {
-            // Arrange
-            var mockService = new Mock<ICourseService>();
-            var updateDto = new CourseDTO.UpdateCourseDto { Name = "Advanced Physics" };
-            var updatedCourse = new CourseDTO.CourseDto { CourseId = 200, Code = "PHY201", Name = "Advanced Physics", InstructorUserId = 21, InstructorName = "Prof. Q" };
-            var expectedResponse = new ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>((updatedCourse, new { Name = "Old Name" }));
-            mockService.Setup(s => s.UpdateCourseAsync(200, It.IsAny<CourseDTO.UpdateCourseDto>()))
-                       .ReturnsAsync(expectedResponse);
+            var mockService = new Mock<IQuizService>();
+            var updateDto = new QuizDTO.UpdateQuizDto { Title = "Updated" };
+            var updated = new QuizDTO.QuizDto { QuizId = 200, CourseId = 12, Title = "Updated" };
+            var expected = new ServiceResponse<(QuizDTO.QuizDto UpdatedQuiz, object OldValues)>((updated, new { Title = "Old" }));
+            mockService.Setup(s => s.UpdateQuizAsync(200, It.IsAny<QuizDTO.UpdateQuizDto>()))
+                       .ReturnsAsync(expected);
 
             var controller = CreateController(mockService);
 
-            // Act
             var result = await controller.Update(200, updateDto);
 
-            // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
             var val = ok.Value!;
             var successProp = val.GetType().GetProperty("Success")!.GetValue(val);
             Assert.True((bool)successProp!);
-            var dataProp = val.GetType().GetProperty("Data")!.GetValue(val) as CourseDTO.CourseDto;
+            var dataProp = val.GetType().GetProperty("Data")!.GetValue(val) as QuizDTO.QuizDto;
             Assert.NotNull(dataProp);
-            Assert.Equal(200, dataProp!.CourseId);
-            Assert.Equal("Advanced Physics", dataProp!.Name);
+            Assert.Equal(200, dataProp!.QuizId);
+            Assert.Equal("Updated", dataProp!.Title);
         }
 
         [Fact]
         public async Task Delete_ReturnsOk_WithSuccessTrue()
         {
-            // Arrange
-            var mockService = new Mock<ICourseService>();
-            var infoDto = new CourseDTO.CourseDto { CourseId = 300, Code = "BIO101", Name = "Biology" };
-            var expectedResponse = new ServiceResponse<(bool Deleted, object CourseInfo)>((true, infoDto));
-            mockService.Setup(s => s.DeleteCourseAsync(300)).ReturnsAsync(expectedResponse);
+            var mockService = new Mock<IQuizService>();
+            var infoDto = new QuizDTO.QuizDto { QuizId = 300, CourseId = 10, Title = "Pop Quiz" };
+            var expected = new ServiceResponse<(bool Deleted, object QuizInfo)>((true, infoDto));
+            mockService.Setup(s => s.DeleteQuizAsync(300)).ReturnsAsync(expected);
 
             var controller = CreateController(mockService);
 
-            // Act
             var result = await controller.Delete(300);
 
-            // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
             var val = ok.Value!;
             var successProp = val.GetType().GetProperty("Success")!.GetValue(val);
@@ -163,11 +145,10 @@ namespace OnlineQuiz.Tests.Controllers
             Assert.True((bool)dataProp!);
         }
 
-        // Attribute checks to mirror controller annotations
         [Fact]
         public void Controller_HasAuthorizeAndApiControllerAttributes()
         {
-            var type = typeof(CourseController);
+            var type = typeof(QuizController);
             var hasAuthorize = type.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true).Any();
             var hasApiController = type.GetCustomAttributes(typeof(ApiControllerAttribute), inherit: true).Any();
             Assert.True(hasAuthorize);
@@ -177,7 +158,7 @@ namespace OnlineQuiz.Tests.Controllers
         [Fact]
         public void Controller_HasRouteAttributeWithExpectedTemplate()
         {
-            var type = typeof(CourseController);
+            var type = typeof(QuizController);
             var routeAttr = type.GetCustomAttributes(typeof(RouteAttribute), inherit: true)
                                 .Cast<RouteAttribute>()
                                 .FirstOrDefault();
@@ -188,7 +169,7 @@ namespace OnlineQuiz.Tests.Controllers
         [Fact]
         public void Endpoints_HaveExpectedHttpMethodAttributes()
         {
-            var type = typeof(CourseController);
+            var type = typeof(QuizController);
 
             var getAll = type.GetMethod("GetAll");
             var getAllAttr = Assert.Single(getAll!.GetCustomAttributes(typeof(HttpGetAttribute), inherit: true));
@@ -215,6 +196,12 @@ namespace OnlineQuiz.Tests.Controllers
             Assert.IsType<HttpDeleteAttribute>(deleteAttr);
             var deleteTemplate = ((HttpDeleteAttribute)deleteAttr).Template;
             Assert.Equal("{id:long}", deleteTemplate);
+
+            var getByCourse = type.GetMethod("GetByCourse");
+            var getByCourseAttr = Assert.Single(getByCourse!.GetCustomAttributes(typeof(HttpGetAttribute), inherit: true));
+            Assert.IsType<HttpGetAttribute>(getByCourseAttr);
+            var getByCourseTemplate = ((HttpGetAttribute)getByCourseAttr).Template;
+            Assert.Equal("course/{courseId}", getByCourseTemplate);
         }
     }
 }

@@ -9,7 +9,6 @@ using OnlineQuiz.Configuration;
 using OnlineQuiz.Mappings;
 using OnlineQuiz.IRepository;
 using OnlineQuiz.Repository;
-using OnlineQuiz.Class;
 using Scalar.AspNetCore;
 using DotNetEnv;
 
