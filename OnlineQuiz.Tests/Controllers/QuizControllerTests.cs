@@ -79,6 +79,33 @@ namespace OnlineQuiz.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetById_ReturnsOk_WithFailureResponse()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var mockActivityLog = new Mock<IActivityLogService>();
+            mockActivityLog
+                .Setup(s => s.LogEntityActionAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()))
+                .Returns(Task.CompletedTask);
+
+            var failure = ServiceResponse<QuizDTO.QuizDto>.Fail("Quiz not found");
+            mockService.Setup(s => s.GetQuizByIdAsync(999)).ReturnsAsync(failure);
+
+            var controller = CreateController(mockService, mockActivityLog);
+
+            // Act
+            var result = await controller.GetById(999);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var payload = Assert.IsType<ServiceResponse<QuizDTO.QuizDto>>(ok.Value);
+            Assert.False(payload.Success);
+            Assert.Null(payload.Data);
+            Assert.Equal("Quiz not found", payload.Message);
+            mockActivityLog.Verify(s => s.LogEntityActionAsync(It.IsAny<long>(), "VIEW", "Quiz", It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()), Times.Never);
+        }
+
+        [Fact]
         public async Task Create_ReturnsOk_WithCreatedQuiz()
         {
             var mockService = new Mock<IQuizService>();
@@ -98,6 +125,34 @@ namespace OnlineQuiz.Tests.Controllers
             Assert.NotNull(payload.Data);
             Assert.Equal(100, payload.Data!.QuizId);
             Assert.Equal("Final", payload.Data!.Title);
+        }
+
+        [Fact]
+        public async Task Create_ReturnsOk_OnFailure_DoesNotLog()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var mockActivityLog = new Mock<IActivityLogService>();
+            mockActivityLog
+                .Setup(s => s.LogEntityActionAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()))
+                .Returns(Task.CompletedTask);
+
+            var dto = new QuizDTO.CreateQuizDto { CourseId = 10, Title = "Final" };
+            var failure = ServiceResponse<QuizDTO.QuizDto>.Fail("Validation error");
+            mockService.Setup(s => s.CreateQuizAsync(It.IsAny<QuizDTO.CreateQuizDto>(), It.IsAny<long>())).ReturnsAsync(failure);
+
+            var controller = CreateController(mockService, mockActivityLog);
+
+            // Act
+            var result = await controller.Create(dto);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var payload = Assert.IsType<ServiceResponse<QuizDTO.QuizDto>>(ok.Value);
+            Assert.False(payload.Success);
+            Assert.Null(payload.Data);
+            Assert.Equal("Validation error", payload.Message);
+            mockActivityLog.Verify(s => s.LogEntityActionAsync(It.IsAny<long>(), "CREATE", "Quiz", It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()), Times.Never);
         }
 
         [Fact]
@@ -125,6 +180,36 @@ namespace OnlineQuiz.Tests.Controllers
         }
 
         [Fact]
+        public async Task Update_ReturnsOk_OnFailure_WithNullData_DoesNotLog()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var mockActivityLog = new Mock<IActivityLogService>();
+            mockActivityLog
+                .Setup(s => s.LogEntityActionAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()))
+                .Returns(Task.CompletedTask);
+
+            var failure = ServiceResponse<(QuizDTO.QuizDto UpdatedQuiz, object OldValues)>.Fail("Not found");
+            mockService.Setup(s => s.UpdateQuizAsync(200, It.IsAny<QuizDTO.UpdateQuizDto>())).ReturnsAsync(failure);
+
+            var controller = CreateController(mockService, mockActivityLog);
+
+            // Act
+            var result = await controller.Update(200, new QuizDTO.UpdateQuizDto { Title = "Updated" });
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var val = ok.Value!;
+            var successProp = val.GetType().GetProperty("Success")!.GetValue(val);
+            Assert.False((bool)successProp!);
+            var dataProp = val.GetType().GetProperty("Data")!.GetValue(val);
+            Assert.Null(dataProp);
+            var msgProp = val.GetType().GetProperty("Message")!.GetValue(val);
+            Assert.Equal("Not found", msgProp);
+            mockActivityLog.Verify(s => s.LogEntityActionAsync(It.IsAny<long>(), "UPDATE", "Quiz", It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()), Times.Never);
+        }
+
+        [Fact]
         public async Task Delete_ReturnsOk_WithSuccessTrue()
         {
             var mockService = new Mock<IQuizService>();
@@ -143,6 +228,99 @@ namespace OnlineQuiz.Tests.Controllers
             var dataProp = val.GetType().GetProperty("Data")!.GetValue(val);
             Assert.IsType<bool>(dataProp!);
             Assert.True((bool)dataProp!);
+        }
+
+        [Fact]
+        public async Task Delete_ReturnsOk_OnFailure_WithFalseDeleted_DoesNotLog()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var mockActivityLog = new Mock<IActivityLogService>();
+            mockActivityLog
+                .Setup(s => s.LogEntityActionAsync(It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()))
+                .Returns(Task.CompletedTask);
+
+            var failure = ServiceResponse<(bool Deleted, object QuizInfo)>.Fail("Not found");
+            mockService.Setup(s => s.DeleteQuizAsync(300)).ReturnsAsync(failure);
+
+            var controller = CreateController(mockService, mockActivityLog);
+
+            // Act
+            var result = await controller.Delete(300);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var val = ok.Value!;
+            var successProp = val.GetType().GetProperty("Success")!.GetValue(val);
+            Assert.False((bool)successProp!);
+            var dataProp = val.GetType().GetProperty("Data")!.GetValue(val);
+            Assert.IsType<bool>(dataProp!);
+            Assert.False((bool)dataProp!);
+            var msgProp = val.GetType().GetProperty("Message")!.GetValue(val);
+            Assert.Equal("Not found", msgProp);
+            mockActivityLog.Verify(s => s.LogEntityActionAsync(It.IsAny<long>(), "DELETE", "Quiz", It.IsAny<long>(), It.IsAny<string>(), It.IsAny<object?>(), It.IsAny<object?>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetByCourse_ReturnsOk_WithEmptyList()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var empty = new List<QuizDTO.QuizDto>();
+            mockService.Setup(s => s.GetQuizzesByCourseAsync(777))
+                       .ReturnsAsync(new ServiceResponse<IEnumerable<QuizDTO.QuizDto>>(empty));
+
+            var controller = CreateController(mockService);
+
+            // Act
+            var result = await controller.GetByCourse(777);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var payload = Assert.IsType<ServiceResponse<IEnumerable<QuizDTO.QuizDto>>>(ok.Value);
+            Assert.True(payload.Success);
+            Assert.NotNull(payload.Data);
+            Assert.Empty(payload.Data!);
+        }
+
+        [Fact]
+        public async Task GetMyQuizzes_ReturnsOk_ForCurrentUser()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var quizzes = new List<QuizDTO.QuizDto>
+            {
+                new QuizDTO.QuizDto { QuizId = 1, CourseId = 10, Title = "Mine 1" },
+                new QuizDTO.QuizDto { QuizId = 2, CourseId = 11, Title = "Mine 2" }
+            };
+            mockService.Setup(s => s.GetQuizzesByInstructorAsync(1))
+                       .ReturnsAsync(new ServiceResponse<IEnumerable<QuizDTO.QuizDto>>(quizzes));
+
+            var controller = CreateController(mockService);
+
+            // Act
+            var result = await controller.GetMyQuizzes();
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var payload = Assert.IsType<ServiceResponse<IEnumerable<QuizDTO.QuizDto>>>(ok.Value);
+            Assert.True(payload.Success);
+            Assert.Equal(2, payload.Data!.Count());
+        }
+
+        [Fact]
+        public async Task GetMyQuizzes_MissingClaim_ThrowsUnauthorized()
+        {
+            // Arrange
+            var mockService = new Mock<IQuizService>();
+            var controller = new QuizController(mockService.Object, new Mock<IActivityLogService>().Object);
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) }
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await controller.GetMyQuizzes());
         }
 
         [Fact]

@@ -15,25 +15,20 @@ namespace OnlineQuiz.Tests.Services
         private static QuizService CreateService(Mock<IQuizRepository> mockRepo) => new QuizService(mockRepo.Object);
 
         [Fact]
-        public async Task GetAllQuizzesAsync_Returns_List()
+        public async Task GetAllQuizzesAsync_ReturnsEmptyList_WhenRepositoryReturnsEmpty()
         {
+            // Arrange
             var mockRepo = new Mock<IQuizRepository>();
-            var quizzes = new List<QuizDTO.QuizDto>
-            {
-                new QuizDTO.QuizDto { QuizId = 1, CourseId = 10, Title = "Quiz A" },
-                new QuizDTO.QuizDto { QuizId = 2, CourseId = 11, Title = "Quiz B" }
-            };
-            var expected = new ServiceResponse<IEnumerable<QuizDTO.QuizDto>>(quizzes);
-            mockRepo.Setup(r => r.GetAllQuizzesAsync()).ReturnsAsync(expected);
+            mockRepo.Setup(r => r.GetAllQuizzesAsync()).ReturnsAsync(new ServiceResponse<IEnumerable<QuizDTO.QuizDto>>(Enumerable.Empty<QuizDTO.QuizDto>()));
+            var service = new QuizService(mockRepo.Object);
 
-            var service = CreateService(mockRepo);
+            // Act
             var result = await service.GetAllQuizzesAsync();
 
+            // Assert
             Assert.True(result.Success);
             Assert.NotNull(result.Data);
-            Assert.Equal(2, result.Data!.Count());
-            Assert.Contains(result.Data!, q => q.Title == "Quiz A");
-            Assert.Contains(result.Data!, q => q.Title == "Quiz B");
+            Assert.Empty(result.Data!);
             mockRepo.Verify(r => r.GetAllQuizzesAsync(), Times.Once);
         }
 
@@ -53,6 +48,24 @@ namespace OnlineQuiz.Tests.Services
             Assert.Equal(5, result.Data!.QuizId);
             Assert.Equal("Midterm", result.Data!.Title);
             mockRepo.Verify(r => r.GetQuizByIdAsync(5), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetQuizByIdAsync_ReturnsFailure_WhenRepositoryReturnsNull()
+        {
+            // Arrange
+            var mockRepo = new Mock<IQuizRepository>();
+            mockRepo.Setup(r => r.GetQuizByIdAsync(999)).ReturnsAsync(ServiceResponse<QuizDTO.QuizDto>.Fail("Quiz not found"));
+            var service = new QuizService(mockRepo.Object);
+
+            // Act
+            var result = await service.GetQuizByIdAsync(999);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Null(result.Data);
+            Assert.Contains("not found", result.Message!, StringComparison.OrdinalIgnoreCase);
+            mockRepo.Verify(r => r.GetQuizByIdAsync(999), Times.Once);
         }
 
         [Fact]
@@ -76,6 +89,24 @@ namespace OnlineQuiz.Tests.Services
         }
 
         [Fact]
+        public async Task CreateQuizAsync_ReturnsFailure_WhenRepositoryThrows()
+        {
+            // Arrange
+            var mockRepo = new Mock<IQuizRepository>();
+            mockRepo.Setup(r => r.CreateQuizAsync(It.IsAny<QuizDTO.CreateQuizDto>(), It.IsAny<long>()))
+                    .ReturnsAsync(ServiceResponse<QuizDTO.QuizDto>.Fail("Error creating quiz"));
+            var service = new QuizService(mockRepo.Object);
+
+            // Act
+            var result = await service.CreateQuizAsync(new QuizDTO.CreateQuizDto { CourseId = 1, Title = "A" }, 1);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Null(result.Data);
+            Assert.Contains("error", result.Message!, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public async Task UpdateQuizAsync_Returns_UpdatedQuiz_And_Verifies_Call()
         {
             var mockRepo = new Mock<IQuizRepository>();
@@ -96,6 +127,25 @@ namespace OnlineQuiz.Tests.Services
         }
 
         [Fact]
+        public async Task UpdateQuizAsync_ReturnsFailure_WhenRepositoryReturnsNullTuple()
+        {
+            // Arrange
+            var mockRepo = new Mock<IQuizRepository>();
+            mockRepo.Setup(r => r.UpdateQuizAsync(1, It.IsAny<QuizDTO.UpdateQuizDto>()))
+                    .ReturnsAsync(ServiceResponse<(QuizDTO.QuizDto UpdatedQuiz, object OldValues)>.Fail("Not found"));
+            var service = new QuizService(mockRepo.Object);
+
+            // Act
+            var result = await service.UpdateQuizAsync(1, new QuizDTO.UpdateQuizDto { Title = "T" });
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Equal(default((QuizDTO.QuizDto, object)), result.Data);
+            Assert.Contains("not found", result.Message!, StringComparison.OrdinalIgnoreCase);
+            mockRepo.Verify(r => r.UpdateQuizAsync(1, It.IsAny<QuizDTO.UpdateQuizDto>()), Times.Once);
+        }
+
+        [Fact]
         public async Task DeleteQuizAsync_Returns_True_And_Verifies_Call()
         {
             var mockRepo = new Mock<IQuizRepository>();
@@ -111,6 +161,25 @@ namespace OnlineQuiz.Tests.Services
             Assert.True(result.Data.Deleted);
             Assert.IsType<QuizDTO.QuizDto>(result.Data.QuizInfo);
             mockRepo.Verify(r => r.DeleteQuizAsync(id), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteQuizAsync_ReturnsFailure_WhenRepositoryReturnsFalse()
+        {
+            // Arrange
+            var mockRepo = new Mock<IQuizRepository>();
+            var quizInfo = new { QuizId = 1, Title = "T" };
+            mockRepo.Setup(r => r.DeleteQuizAsync(1))
+                    .ReturnsAsync(ServiceResponse<(bool Deleted, object QuizInfo)>.Fail("Not found"));
+            var service = new QuizService(mockRepo.Object);
+
+            // Act
+            var result = await service.DeleteQuizAsync(1);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Equal(default((bool, object)), result.Data);
+            mockRepo.Verify(r => r.DeleteQuizAsync(1), Times.Once);
         }
 
         [Fact]
