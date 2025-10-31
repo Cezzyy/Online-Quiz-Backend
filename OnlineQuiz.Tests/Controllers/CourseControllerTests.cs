@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http; 
+using System.Security.Claims;
 using Moq;
 using OnlineQuiz.Controllers;
 using OnlineQuiz.DTOs;
@@ -15,9 +17,20 @@ namespace OnlineQuiz.Tests.Controllers
 {
     public class CourseControllerTests
     {
-        private static CourseController CreateController(Mock<ICourseService> mockService)
+        private static CourseController CreateController(Mock<ICourseService> mockService, Mock<IActivityLogService>? mockActivityLog = null)
         {
-            return new CourseController(mockService.Object);
+            var controller = new CourseController(mockService.Object, (mockActivityLog ?? new Mock<IActivityLogService>()).Object);
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, "1")
+                    }, "TestAuth"))
+                }
+            };
+            return controller;
         }
 
         [Fact]
@@ -81,7 +94,7 @@ namespace OnlineQuiz.Tests.Controllers
             var createDto = new CourseDTO.CreateCourseDto { Code = "PHY101", Name = "Physics I", InstructorUserId = 20 };
             var createdCourse = new CourseDTO.CourseDto { CourseId = 100, Code = createDto.Code, Name = createDto.Name, InstructorUserId = createDto.InstructorUserId, InstructorName = "Prof. P" };
             var expectedResponse = new ServiceResponse<CourseDTO.CourseDto>(createdCourse);
-            mockService.Setup(s => s.CreateCourseAsync(It.IsAny<CourseDTO.CreateCourseDto>()))
+            mockService.Setup(s => s.CreateCourseAsync(It.IsAny<CourseDTO.CreateCourseDto>(), It.IsAny<long>()))
                        .ReturnsAsync(expectedResponse);
 
             var controller = CreateController(mockService);
@@ -106,7 +119,7 @@ namespace OnlineQuiz.Tests.Controllers
             var mockService = new Mock<ICourseService>();
             var updateDto = new CourseDTO.UpdateCourseDto { Name = "Advanced Physics" };
             var updatedCourse = new CourseDTO.CourseDto { CourseId = 200, Code = "PHY201", Name = "Advanced Physics", InstructorUserId = 21, InstructorName = "Prof. Q" };
-            var expectedResponse = new ServiceResponse<CourseDTO.CourseDto>(updatedCourse);
+            var expectedResponse = new ServiceResponse<(CourseDTO.CourseDto UpdatedCourse, object OldValues)>((updatedCourse, new { Name = "Old Name" }));
             mockService.Setup(s => s.UpdateCourseAsync(200, It.IsAny<CourseDTO.UpdateCourseDto>()))
                        .ReturnsAsync(expectedResponse);
 
@@ -117,11 +130,13 @@ namespace OnlineQuiz.Tests.Controllers
 
             // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
-            var payload = Assert.IsType<ServiceResponse<CourseDTO.CourseDto>>(ok.Value);
-            Assert.True(payload.Success);
-            Assert.NotNull(payload.Data);
-            Assert.Equal(200, payload.Data!.CourseId);
-            Assert.Equal("Advanced Physics", payload.Data!.Name);
+            var val = ok.Value!;
+            var successProp = val.GetType().GetProperty("Success")!.GetValue(val);
+            Assert.True((bool)successProp!);
+            var dataProp = val.GetType().GetProperty("Data")!.GetValue(val) as CourseDTO.CourseDto;
+            Assert.NotNull(dataProp);
+            Assert.Equal(200, dataProp!.CourseId);
+            Assert.Equal("Advanced Physics", dataProp!.Name);
         }
 
         [Fact]
@@ -129,7 +144,8 @@ namespace OnlineQuiz.Tests.Controllers
         {
             // Arrange
             var mockService = new Mock<ICourseService>();
-            var expectedResponse = new ServiceResponse<bool>(true);
+            var infoDto = new CourseDTO.CourseDto { CourseId = 300, Code = "BIO101", Name = "Biology" };
+            var expectedResponse = new ServiceResponse<(bool Deleted, object CourseInfo)>((true, infoDto));
             mockService.Setup(s => s.DeleteCourseAsync(300)).ReturnsAsync(expectedResponse);
 
             var controller = CreateController(mockService);
@@ -139,9 +155,12 @@ namespace OnlineQuiz.Tests.Controllers
 
             // Assert
             var ok = Assert.IsType<OkObjectResult>(result);
-            var payload = Assert.IsType<ServiceResponse<bool>>(ok.Value);
-            Assert.True(payload.Success);
-            Assert.True(payload.Data is true);
+            var val = ok.Value!;
+            var successProp = val.GetType().GetProperty("Success")!.GetValue(val);
+            Assert.True((bool)successProp!);
+            var dataProp = val.GetType().GetProperty("Data")!.GetValue(val);
+            Assert.IsType<bool>(dataProp!);
+            Assert.True((bool)dataProp!);
         }
 
         // Attribute checks to mirror controller annotations

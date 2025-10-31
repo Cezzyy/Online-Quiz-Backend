@@ -72,7 +72,7 @@ namespace OnlineQuiz.Tests.Repository
                 InstructorUserId = instructorId
             };
 
-            var response = await repo.CreateCourseAsync(dto);
+            var response = await repo.CreateCourseAsync(dto, instructorId);
             Assert.True(response.Success);
             Assert.NotNull(response.Data);
             Assert.Equal("CS101", response.Data!.Code);
@@ -91,10 +91,19 @@ namespace OnlineQuiz.Tests.Repository
             var repo = new CourseRepository(db, mapper);
 
             var instructorId = await SeedTeacherWithUserAsync(db, name: "Prof. Smith");
-
-            db.Courses.Add(new CourseModel { Code = "MATH1", Name = "Algebra", InstructorUserId = instructorId });
-            db.Courses.Add(new CourseModel { Code = "CS201", Name = "Data Structures", InstructorUserId = instructorId });
-            await db.SaveChangesAsync();
+            // Create courses via repository to ensure all navigation properties are set
+            await repo.CreateCourseAsync(new CourseDTO.CreateCourseDto
+            {
+                Code = "MATH1",
+                Name = "Algebra",
+                InstructorUserId = instructorId
+            }, instructorId);
+            await repo.CreateCourseAsync(new CourseDTO.CreateCourseDto
+            {
+                Code = "CS201",
+                Name = "Data Structures",
+                InstructorUserId = instructorId
+            }, instructorId);
 
             var response = await repo.GetAllCoursesAsync();
             Assert.True(response.Success);
@@ -112,11 +121,13 @@ namespace OnlineQuiz.Tests.Repository
 
             var instructorId = await SeedTeacherWithUserAsync(db, name: "Dr. Jane");
 
-            var course = new CourseModel { Code = "PHY101", Name = "Physics", InstructorUserId = instructorId };
-            db.Courses.Add(course);
-            await db.SaveChangesAsync();
-
-            var response = await repo.GetCourseByIdAsync(course.CourseId);
+            var created = await repo.CreateCourseAsync(new CourseDTO.CreateCourseDto
+            {
+                Code = "PHY101",
+                Name = "Physics",
+                InstructorUserId = instructorId
+            }, instructorId);
+            var response = await repo.GetCourseByIdAsync(created.Data!.CourseId);
             Assert.True(response.Success);
             Assert.NotNull(response.Data);
             Assert.Equal("PHY101", response.Data!.Code);
@@ -144,16 +155,19 @@ namespace OnlineQuiz.Tests.Repository
             var repo = new CourseRepository(db, mapper);
 
             var instructorId = await SeedTeacherWithUserAsync(db);
-            var course = new CourseModel { Code = "HIST1", Name = "History", InstructorUserId = instructorId };
-            db.Courses.Add(course);
-            await db.SaveChangesAsync();
+            var created = await repo.CreateCourseAsync(new CourseDTO.CreateCourseDto
+            {
+                Code = "HIST1",
+                Name = "History",
+                InstructorUserId = instructorId
+            }, instructorId);
 
             var update = new CourseDTO.UpdateCourseDto { Name = "World History" };
 
-            var response = await repo.UpdateCourseAsync(course.CourseId, update);
+            var response = await repo.UpdateCourseAsync(created.Data!.CourseId, update);
             Assert.True(response.Success);
-            Assert.NotNull(response.Data);
-            Assert.Equal("World History", response.Data!.Name);
+            Assert.NotNull(response.Data.UpdatedCourse);
+            Assert.Equal("World History", response.Data!.UpdatedCourse.Name);
         }
 
         [Fact]
@@ -183,7 +197,7 @@ namespace OnlineQuiz.Tests.Repository
 
             var response = await repo.DeleteCourseAsync(course.CourseId);
             Assert.True(response.Success);
-            Assert.True(response.Data);
+            Assert.True(response.Data!.Deleted);
             Assert.Equal(0, await db.Courses.CountAsync());
         }
 

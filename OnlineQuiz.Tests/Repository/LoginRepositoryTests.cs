@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Moq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -236,9 +237,9 @@ namespace OnlineQuiz.Tests.Repository
         {
             var dbName = $"LoginRepo_Logout_NotFound_{Guid.NewGuid()}";
             using var context = CreateContext(dbName);
-            var mapper = CreateMapper();
-            var jwtOptions = CreateJwtOptions();
-            var repo = new LoginRepository(context, mapper, jwtOptions);
+            var mapperStub = new Mock<IMapper>().Object;
+            var jwtOptionsStub = Options.Create(new JwtSettings());
+            var repo = new LoginRepository(context, mapperStub, jwtOptionsStub);
 
             var response = await repo.LogoutAsync(9999);
             Assert.False(response.Success);
