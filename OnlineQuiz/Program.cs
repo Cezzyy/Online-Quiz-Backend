@@ -107,12 +107,14 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(AutoMapperProfile));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ILoginRepository, LoginRepository>();
 // builder.Services.AddScoped<ICourseRepository, CourseClass>();
-// builder.Services.AddScoped<IQuizRepository, QuizClass>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 
 // Register Service Layer
 builder.Services.AddScoped<IUserService, UserService>();
 // builder.Services.AddScoped<ICourseService, CourseService>();
-// builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 

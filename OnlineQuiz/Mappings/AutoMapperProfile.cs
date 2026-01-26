@@ -97,6 +97,21 @@ namespace OnlineQuiz.Mappings
 
             // Role mappings
             CreateMap<RoleModel, string>().ConvertUsing(src => src.Name);
+            // Question mappings
+            CreateMap<QuestionModel, QuestionDTO.QuestionDto>();
+            CreateMap<ChoiceModel, QuestionDTO.ChoiceDto>();
+
+            CreateMap<QuestionDTO.CreateQuestionDto, QuestionModel>()
+                .ForMember(dest => dest.QuestionId, opt => opt.Ignore())
+                .ForMember(dest => dest.Quiz, opt => opt.Ignore())
+                .ForMember(dest => dest.AttemptAnswers, opt => opt.Ignore())
+                .ForMember(dest => dest.SortOrder, opt => opt.Ignore()); // 0 by default, handled in Repo/Service
+
+            CreateMap<QuestionDTO.CreateChoiceDto, ChoiceModel>()
+                .ForMember(dest => dest.ChoiceId, opt => opt.Ignore())
+                .ForMember(dest => dest.QuestionId, opt => opt.Ignore())
+                .ForMember(dest => dest.Question, opt => opt.Ignore())
+                .ForMember(dest => dest.AttemptAnswers, opt => opt.Ignore());
         }
     }
 }
