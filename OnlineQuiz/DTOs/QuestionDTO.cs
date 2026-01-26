@@ -63,5 +63,22 @@ namespace OnlineQuiz.DTOs
             public int SortOrder { get; set; }
             public List<ChoiceDto> Choices { get; set; } = new List<ChoiceDto>();
         }
+
+        public class StudentChoiceDto
+        {
+            public long ChoiceId { get; set; }
+            public string Body { get; set; } = string.Empty;
+        }
+
+        public class StudentQuestionDto
+        {
+            public long QuestionId { get; set; }
+            public long QuizId { get; set; }
+            public string Type { get; set; } = string.Empty;
+            public string Body { get; set; } = string.Empty;
+            public decimal Points { get; set; }
+            public int SortOrder { get; set; }
+            public List<StudentChoiceDto> Choices { get; set; } = new List<StudentChoiceDto>();
+        }
     }
 }

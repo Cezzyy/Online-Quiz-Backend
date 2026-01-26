@@ -19,14 +19,26 @@ namespace OnlineQuiz.Controllers
         }
 
         [HttpGet("quiz/{quizId}")]
-        public async Task<ActionResult<ServiceResponse<IEnumerable<QuestionDTO.QuestionDto>>>> GetQuestionsByQuizId(long quizId)
+        public async Task<IActionResult> GetQuestionsByQuizId(long quizId)
         {
-            var response = await _questionService.GetQuestionsByQuizIdAsync(quizId);
-            if (!response.Success)
+            if (User.IsInRole("Student"))
             {
-                return BadRequest(response); // Or NotFound depending on logic
+                var response = await _questionService.GetQuestionsForStudentByQuizIdAsync(quizId);
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+                return Ok(response);
             }
-            return Ok(response);
+            else
+            {
+                var response = await _questionService.GetQuestionsByQuizIdAsync(quizId);
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+                return Ok(response);
+            }
         }
 
         [HttpGet("{id}")]

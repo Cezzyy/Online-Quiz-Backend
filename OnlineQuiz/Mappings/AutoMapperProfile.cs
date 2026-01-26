@@ -101,6 +101,10 @@ namespace OnlineQuiz.Mappings
             CreateMap<QuestionModel, QuestionDTO.QuestionDto>();
             CreateMap<ChoiceModel, QuestionDTO.ChoiceDto>();
 
+            // Student Question mappings
+            CreateMap<QuestionModel, QuestionDTO.StudentQuestionDto>();
+            CreateMap<ChoiceModel, QuestionDTO.StudentChoiceDto>();
+
             CreateMap<QuestionDTO.CreateQuestionDto, QuestionModel>()
                 .ForMember(dest => dest.QuestionId, opt => opt.Ignore())
                 .ForMember(dest => dest.Quiz, opt => opt.Ignore())

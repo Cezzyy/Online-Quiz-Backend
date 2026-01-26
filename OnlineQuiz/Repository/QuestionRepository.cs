@@ -42,6 +42,29 @@ namespace OnlineQuiz.Repository
             return response;
         }
 
+        public async Task<ServiceResponse<IEnumerable<QuestionDTO.StudentQuestionDto>>> GetQuestionsForStudentByQuizIdAsync(long quizId)
+        {
+            var response = new ServiceResponse<IEnumerable<QuestionDTO.StudentQuestionDto>>();
+            try
+            {
+                var questions = await _context.Questions
+                    .Where(q => q.QuizId == quizId)
+                    .Include(q => q.Choices)
+                    .OrderBy(q => q.SortOrder)
+                    .ToListAsync();
+
+                response.Data = _mapper.Map<IEnumerable<QuestionDTO.StudentQuestionDto>>(questions);
+                response.Success = true;
+                response.Message = "Questions retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving questions: {ex.Message}";
+            }
+            return response;
+        }
+
         public async Task<ServiceResponse<QuestionDTO.QuestionDto>> GetQuestionByIdAsync(long id)
         {
             var response = new ServiceResponse<QuestionDTO.QuestionDto>();

@@ -19,6 +19,11 @@ namespace OnlineQuiz.Services
             return await _questionRepository.GetQuestionsByQuizIdAsync(quizId);
         }
 
+        public async Task<ServiceResponse<IEnumerable<QuestionDTO.StudentQuestionDto>>> GetQuestionsForStudentByQuizIdAsync(long quizId)
+        {
+            return await _questionRepository.GetQuestionsForStudentByQuizIdAsync(quizId);
+        }
+
         public async Task<ServiceResponse<QuestionDTO.QuestionDto>> GetQuestionByIdAsync(long id)
         {
             return await _questionRepository.GetQuestionByIdAsync(id);
