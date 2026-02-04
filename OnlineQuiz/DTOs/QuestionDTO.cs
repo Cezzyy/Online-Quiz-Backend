@@ -87,6 +87,8 @@ namespace OnlineQuiz.DTOs
             public string ChoiceText { get; set; } = string.Empty;
             public bool IsCorrect { get; set; }
             public int OrderIndex { get; set; }
+            public string? Explanation { get; set; }
+            public DateTime CreatedAt { get; set; }
         }
 
         public class CreateChoiceDto
@@ -98,6 +100,9 @@ namespace OnlineQuiz.DTOs
             public bool IsCorrect { get; set; }
             
             public int OrderIndex { get; set; }
+            
+            [StringLength(500)]
+            public string? Explanation { get; set; }
         }
     }
 }

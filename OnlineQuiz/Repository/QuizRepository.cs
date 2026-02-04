@@ -26,6 +26,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var quizzes = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
                     .Include(q => q.Course)
                     .ThenInclude(c => c.Instructor)
                     .ThenInclude(t => t.User)
@@ -50,6 +51,7 @@ namespace OnlineQuiz.Repository
             var response = new ServiceResponse<QuizDTO.QuizDto>();
 
             var quiz = await _context.Quizzes
+                .Where(q => !q.IsDeleted)
                 .Include(q => q.Course)
                 .ThenInclude(c => c.Instructor)
                 .ThenInclude(t => t.User)
@@ -89,12 +91,14 @@ namespace OnlineQuiz.Repository
                 var model = _mapper.Map<QuizModel>(dto);
                 model.CreatedAt = DateTime.UtcNow;
                 model.UpdatedAt = DateTime.UtcNow;
+                model.IsDeleted = false;
 
                 _context.Quizzes.Add(model);
                 await _context.SaveChangesAsync();
 
                 // Reload with navigation properties
                 var createdQuiz = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
                     .Include(q => q.Course)
                     .ThenInclude(c => c.Instructor)
                     .ThenInclude(t => t.User)
@@ -120,7 +124,9 @@ namespace OnlineQuiz.Repository
             
             try
             {
-                var quiz = await _context.Quizzes.FindAsync(id);
+                var quiz = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
+                    .FirstOrDefaultAsync(q => q.QuizId == id);
 
                 if (quiz == null)
                 {
@@ -133,14 +139,34 @@ namespace OnlineQuiz.Repository
                 var oldValues = new
                 {
                     quiz.Title,
+                    quiz.Description,
+                    quiz.Instructions,
                     quiz.DueAt,
                     quiz.TimeLimitMinutes,
+                    quiz.MaxAttempts,
+                    quiz.ShuffleQuestions,
+                    quiz.ShuffleChoices,
+                    quiz.AvailableFrom,
+                    quiz.AvailableUntil,
+                    quiz.PassingScore,
+                    quiz.ShowCorrectAnswers,
+                    quiz.ShowScoreImmediately,
                     quiz.IsPublished
                 };
 
                 if (!string.IsNullOrWhiteSpace(dto.Title)) quiz.Title = dto.Title;
+                if (dto.Description != null) quiz.Description = dto.Description;
+                if (dto.Instructions != null) quiz.Instructions = dto.Instructions;
                 if (dto.DueAt.HasValue) quiz.DueAt = dto.DueAt.Value;
                 if (dto.TimeLimitMinutes.HasValue) quiz.TimeLimitMinutes = dto.TimeLimitMinutes.Value;
+                if (dto.MaxAttempts.HasValue) quiz.MaxAttempts = dto.MaxAttempts.Value;
+                if (dto.ShuffleQuestions.HasValue) quiz.ShuffleQuestions = dto.ShuffleQuestions.Value;
+                if (dto.ShuffleChoices.HasValue) quiz.ShuffleChoices = dto.ShuffleChoices.Value;
+                if (dto.AvailableFrom.HasValue) quiz.AvailableFrom = dto.AvailableFrom.Value;
+                if (dto.AvailableUntil.HasValue) quiz.AvailableUntil = dto.AvailableUntil.Value;
+                if (dto.PassingScore.HasValue) quiz.PassingScore = dto.PassingScore.Value;
+                if (dto.ShowCorrectAnswers.HasValue) quiz.ShowCorrectAnswers = dto.ShowCorrectAnswers.Value;
+                if (dto.ShowScoreImmediately.HasValue) quiz.ShowScoreImmediately = dto.ShowScoreImmediately.Value;
                 if (dto.IsPublished.HasValue) quiz.IsPublished = dto.IsPublished.Value;
                 
                 quiz.UpdatedAt = DateTime.UtcNow;
@@ -149,6 +175,7 @@ namespace OnlineQuiz.Repository
 
                 // Reload with navigation properties
                 var updatedQuiz = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
                     .Include(q => q.Course)
                     .ThenInclude(c => c.Instructor)
                     .ThenInclude(t => t.User)
@@ -175,7 +202,9 @@ namespace OnlineQuiz.Repository
             
             try
             {
-                var quiz = await _context.Quizzes.FindAsync(id);
+                var quiz = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
+                    .FirstOrDefaultAsync(q => q.QuizId == id);
 
                 if (quiz == null)
                 {
@@ -184,12 +213,13 @@ namespace OnlineQuiz.Repository
                     return response;
                 }
 
-                // Capture quiz info for logging before deletion
+                // Capture quiz info for logging before soft deletion
                 var quizInfo = new
                 {
                     quiz.QuizId,
                     quiz.CourseId,
                     quiz.Title,
+                    quiz.Description,
                     quiz.DueAt,
                     quiz.TimeLimitMinutes,
                     quiz.IsPublished,
@@ -197,7 +227,8 @@ namespace OnlineQuiz.Repository
                     quiz.UpdatedAt
                 };
 
-                _context.Quizzes.Remove(quiz);
+                // Soft delete
+                quiz.IsDeleted = true;
                 await _context.SaveChangesAsync();
 
                 response.Data = (true, quizInfo);
@@ -219,6 +250,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var quizzes = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
                     .Include(q => q.Course)
                     .ThenInclude(c => c.Instructor)
                     .ThenInclude(t => t.User)
@@ -246,6 +278,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var quizzes = await _context.Quizzes
+                    .Where(q => !q.IsDeleted)
                     .Include(q => q.Course)
                     .ThenInclude(c => c.Instructor)
                     .ThenInclude(t => t.User)
