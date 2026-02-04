@@ -302,7 +302,10 @@ namespace OnlineQuiz.Repository
                 }
 
                 // Check if student exists
-                var student = await _context.Users.FindAsync(studentId);
+                var student = await _context.Users
+                    .Where(u => !u.IsDeleted)
+                    .FirstOrDefaultAsync(u => u.UserId == studentId);
+                    
                 if (student == null)
                 {
                     response.Success = false;

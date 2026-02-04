@@ -56,6 +56,7 @@ namespace OnlineQuiz.Services
                 
                 // Fetch UserModel from database for JWT generation
                 var userModel = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.UserId == userDto.Id);
@@ -246,6 +247,14 @@ namespace OnlineQuiz.Services
                     return new ServiceResponse<RefreshTokenResponseDto>("Invalid or expired refresh token");
 
                 var user = matchingToken.User;
+                
+                // Check if user is soft-deleted or inactive
+                if (user.IsDeleted)
+                    return new ServiceResponse<RefreshTokenResponseDto>("User account has been deleted");
+                    
+                if (user.Status != "Active")
+                    return new ServiceResponse<RefreshTokenResponseDto>("User account is not active");
+                
                 var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
                 var roles = user.UserRoles?.Select(ur => ur.Role.Name).ToList() ?? [];
 

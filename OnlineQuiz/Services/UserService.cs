@@ -325,7 +325,10 @@ namespace OnlineQuiz.Services
                     return new ServiceResponse($"Invalid role: {roleName}. Valid roles are: Admin, Teacher, Student");
 
                 // Check if user exists
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                    
                 if (user == null)
                     return new ServiceResponse("User not found");
 
@@ -370,7 +373,10 @@ namespace OnlineQuiz.Services
                     return new ServiceResponse("Role name is required");
 
                 // Check if user exists
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                    
                 if (user == null)
                     return new ServiceResponse("User not found");
 

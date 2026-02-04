@@ -263,7 +263,10 @@ namespace OnlineQuiz.Repository
         {
             try
             {
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                    
                 if (user == null)
                 {
                     return new ServiceResponse<UserDto>
@@ -325,7 +328,10 @@ namespace OnlineQuiz.Repository
         {
             try
             {
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                    
                 if (user == null)
                 {
                     return new ServiceResponse
@@ -432,7 +438,10 @@ namespace OnlineQuiz.Repository
         {
             try
             {
-                var user = await _context.Users.FindAsync(userId);
+                var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
+                    .FirstOrDefaultAsync(u => u.UserId == userId);
+                    
                 if (user == null)
                 {
                     return new ServiceResponse
