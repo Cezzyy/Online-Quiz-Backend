@@ -89,18 +89,14 @@ namespace OnlineQuiz.Services
             return await _courseRepository.UnenrollStudentFromCourseAsync(courseId, userId);
         }
 
-        public Task<ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>> GetCourseEnrollmentsAsync(long courseId)
+        public async Task<ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>> GetCourseEnrollmentsAsync(long courseId)
         {
-            // This method needs to be implemented in the repository
-            // For now, return empty list
-            return Task.FromResult(new ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>(new List<EnrollmentDTO.EnrollmentDto>()));
+            return await _courseRepository.GetCourseEnrollmentsWithDetailsAsync(courseId);
         }
 
-        public Task<ServiceResponse<bool>> IsStudentEnrolledAsync(long userId, long courseId)
+        public async Task<ServiceResponse<bool>> IsStudentEnrolledAsync(long userId, long courseId)
         {
-            // This method needs to be implemented in the repository
-            // For now, return false
-            return Task.FromResult(new ServiceResponse<bool>(false));
+            return await _courseRepository.IsStudentEnrolledInCourseAsync(userId, courseId);
         }
     }
 }

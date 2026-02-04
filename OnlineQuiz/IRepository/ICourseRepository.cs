@@ -17,5 +17,7 @@ namespace OnlineQuiz.IRepository
         Task<ServiceResponse<IEnumerable<StudentDto>>> GetCourseStudentsAsync(long courseId);
         Task<ServiceResponse<bool>> EnrollStudentInCourseAsync(long courseId, long studentId);
         Task<ServiceResponse<bool>> UnenrollStudentFromCourseAsync(long courseId, long studentId);
+        Task<ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>> GetCourseEnrollmentsWithDetailsAsync(long courseId);
+        Task<ServiceResponse<bool>> IsStudentEnrolledInCourseAsync(long studentId, long courseId);
     }
 }

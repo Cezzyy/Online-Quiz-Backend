@@ -362,5 +362,65 @@ namespace OnlineQuiz.Repository
 
             return response;
         }
+
+        public async Task<ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>> GetCourseEnrollmentsWithDetailsAsync(long courseId)
+        {
+            var response = new ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>();
+
+            try
+            {
+                var enrollments = await _context.Enrollments
+                    .Include(e => e.User)
+                    .ThenInclude(u => u.Student)
+                    .Include(e => e.Course)
+                    .Where(e => e.CourseId == courseId)
+                    .ToListAsync();
+
+                var enrollmentDtos = enrollments.Select(e => new EnrollmentDTO.EnrollmentDto
+                {
+                    EnrollmentId = e.EnrollmentId,
+                    CourseId = e.CourseId,
+                    UserId = e.UserId,
+                    CourseName = e.Course?.Name,
+                    CourseCode = e.Course?.Code,
+                    StudentName = e.User?.FullName,
+                    StudentEmail = e.User?.Email,
+                    EnrolledAt = e.EnrolledAt
+                }).ToList();
+
+                response.Data = enrollmentDtos;
+                response.Message = "Course enrollments retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving course enrollments: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<bool>> IsStudentEnrolledInCourseAsync(long studentId, long courseId)
+        {
+            var response = new ServiceResponse<bool>();
+
+            try
+            {
+                var enrollment = await _context.Enrollments
+                    .FirstOrDefaultAsync(e => e.UserId == studentId && e.CourseId == courseId);
+
+                response.Data = enrollment != null;
+                response.Message = enrollment != null 
+                    ? "Student is enrolled in the course." 
+                    : "Student is not enrolled in the course.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error checking enrollment: {ex.Message}";
+            }
+
+            return response;
+        }
     }
 }
