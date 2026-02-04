@@ -16,8 +16,6 @@ using DotNetEnv;
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddScoped<ICourseRepository, CourseRepository>();
-builder.Services.AddScoped<ICourseService, CourseService>();
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -28,6 +26,9 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true; // Pretty print in development
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
+
+// Add HttpContextAccessor for accessing HTTP context in services
+builder.Services.AddHttpContextAccessor();
 
 // Configure Entity Framework
 var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") 
@@ -106,13 +107,13 @@ builder.Services.AddAutoMapper(cfg => { }, typeof(AutoMapperProfile));
 // Register Repository Layer
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ILoginRepository, LoginRepository>();
-// builder.Services.AddScoped<ICourseRepository, CourseClass>();
-// builder.Services.AddScoped<IQuizRepository, QuizClass>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 
 // Register Service Layer
 builder.Services.AddScoped<IUserService, UserService>();
-// builder.Services.AddScoped<ICourseService, CourseService>();
-// builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 

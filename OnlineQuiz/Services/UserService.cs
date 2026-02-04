@@ -291,6 +291,95 @@ namespace OnlineQuiz.Services
             }
         }
 
+        public async Task<ServiceResponse> AssignRoleAsync(long userId, string roleName)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return new ServiceResponse("Invalid user ID");
+
+                if (string.IsNullOrWhiteSpace(roleName))
+                    return new ServiceResponse("Role name is required");
+
+                // Validate role name
+                var validRoles = new[] { "Admin", "Teacher", "Student" };
+                if (!validRoles.Contains(roleName))
+                    return new ServiceResponse($"Invalid role: {roleName}. Valid roles are: Admin, Teacher, Student");
+
+                // Check if user exists
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return new ServiceResponse("User not found");
+
+                // Check if role exists
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+                if (role == null)
+                    return new ServiceResponse($"Role '{roleName}' not found");
+
+                // Check if user already has this role
+                var existingUserRole = await _context.UserRoles
+                    .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.RoleId);
+                
+                if (existingUserRole != null)
+                    return new ServiceResponse($"User already has the '{roleName}' role");
+
+                // Assign role
+                var userRole = new UserRoleModel
+                {
+                    UserId = userId,
+                    RoleId = role.RoleId
+                };
+
+                _context.UserRoles.Add(userRole);
+                await _context.SaveChangesAsync();
+
+                return new ServiceResponse();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse(ex.Message);
+            }
+        }
+
+        public async Task<ServiceResponse> RemoveRoleAsync(long userId, string roleName)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return new ServiceResponse("Invalid user ID");
+
+                if (string.IsNullOrWhiteSpace(roleName))
+                    return new ServiceResponse("Role name is required");
+
+                // Check if user exists
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                    return new ServiceResponse("User not found");
+
+                // Check if role exists
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+                if (role == null)
+                    return new ServiceResponse($"Role '{roleName}' not found");
+
+                // Check if user has this role
+                var userRole = await _context.UserRoles
+                    .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.RoleId);
+                
+                if (userRole == null)
+                    return new ServiceResponse($"User does not have the '{roleName}' role");
+
+                // Remove role
+                _context.UserRoles.Remove(userRole);
+                await _context.SaveChangesAsync();
+
+                return new ServiceResponse();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse(ex.Message);
+            }
+        }
+
 
     }
 }
