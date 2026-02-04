@@ -29,6 +29,13 @@ namespace OnlineQuiz.DTOs
             public long InstructorUserId { get; set; }
             public string Status { get; set; } = "Active";
             public string? Category { get; set; }
+            public string? Description { get; set; }
+            public string? Semester { get; set; }
+            public int? AcademicYear { get; set; }
+            public int? Units { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
+            public bool IsPublished { get; set; } = false;
         }
 
         public class UpdateCourseDto
@@ -38,6 +45,13 @@ namespace OnlineQuiz.DTOs
             public long? InstructorUserId { get; set; }
             public string? Status { get; set; }
             public string? Category { get; set; }
+            public string? Description { get; set; }
+            public string? Semester { get; set; }
+            public int? AcademicYear { get; set; }
+            public int? Units { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
+            public bool? IsPublished { get; set; }
         }
 
         public class CourseDto
@@ -53,6 +67,15 @@ namespace OnlineQuiz.DTOs
             public DateTime UpdatedAt { get; set; }
             public long CreatedBy { get; set; }
             public string? CreatedByName { get; set; }
+            public string? Description { get; set; }
+            public string? Semester { get; set; }
+            public int? AcademicYear { get; set; }
+            public int? Units { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
+            public bool IsPublished { get; set; }
+            public bool IsDeleted { get; set; }
+            public DateTime? DeletedAt { get; set; }
         }
     }
 }

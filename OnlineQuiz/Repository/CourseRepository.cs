@@ -26,6 +26,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var courses = await _context.Courses
+                    .Where(c => !c.IsDeleted)
                     .Include(c => c.Instructor)
                     .ThenInclude(t => t.User)
                     .Include(c => c.Creator)
@@ -48,6 +49,7 @@ namespace OnlineQuiz.Repository
             var response = new ServiceResponse<CourseDTO.CourseDto>();
 
             var course = await _context.Courses
+                .Where(c => !c.IsDeleted)
                 .Include(c => c.Instructor)
                 .ThenInclude(t => t.User)
                 .Include(c => c.Creator)
@@ -74,6 +76,7 @@ namespace OnlineQuiz.Repository
                 model.CreatedBy = createdByUserId;
                 model.CreatedAt = DateTime.UtcNow;
                 model.UpdatedAt = DateTime.UtcNow;
+                model.IsDeleted = false;
 
                 _context.Courses.Add(model);
                 await _context.SaveChangesAsync();
@@ -103,7 +106,9 @@ namespace OnlineQuiz.Repository
             
             try
             {
-                var course = await _context.Courses.FindAsync(id);
+                var course = await _context.Courses
+                    .Where(c => !c.IsDeleted)
+                    .FirstOrDefaultAsync(c => c.CourseId == id);
 
                 if (course == null)
                 {
@@ -119,14 +124,31 @@ namespace OnlineQuiz.Repository
                     course.Name,
                     course.InstructorUserId,
                     course.Status,
-                    course.Category
+                    course.Category,
+                    course.Description,
+                    course.Semester,
+                    course.AcademicYear,
+                    course.Units,
+                    course.StartDate,
+                    course.EndDate,
+                    course.IsPublished
                 };
 
+                // Update basic fields
                 if (!string.IsNullOrWhiteSpace(dto.Code)) course.Code = dto.Code;
                 if (!string.IsNullOrWhiteSpace(dto.Name)) course.Name = dto.Name;
                 if (dto.InstructorUserId.HasValue) course.InstructorUserId = dto.InstructorUserId.Value;
                 if (!string.IsNullOrWhiteSpace(dto.Status)) course.Status = dto.Status;
                 if (dto.Category != null) course.Category = dto.Category;
+                
+                // Update new fields
+                if (dto.Description != null) course.Description = dto.Description;
+                if (dto.Semester != null) course.Semester = dto.Semester;
+                if (dto.AcademicYear.HasValue) course.AcademicYear = dto.AcademicYear;
+                if (dto.Units.HasValue) course.Units = dto.Units;
+                if (dto.StartDate.HasValue) course.StartDate = dto.StartDate;
+                if (dto.EndDate.HasValue) course.EndDate = dto.EndDate;
+                if (dto.IsPublished.HasValue) course.IsPublished = dto.IsPublished.Value;
                 
                 course.UpdatedAt = DateTime.UtcNow;
 
@@ -158,7 +180,9 @@ namespace OnlineQuiz.Repository
             
             try
             {
-                var course = await _context.Courses.FindAsync(id);
+                var course = await _context.Courses
+                    .Where(c => !c.IsDeleted)
+                    .FirstOrDefaultAsync(c => c.CourseId == id);
 
                 if (course == null)
                 {
@@ -167,7 +191,7 @@ namespace OnlineQuiz.Repository
                     return response;
                 }
 
-                // Capture course info for logging before deletion
+                // Capture course info for logging before soft deletion
                 var courseInfo = new
                 {
                     course.CourseId,
@@ -176,16 +200,22 @@ namespace OnlineQuiz.Repository
                     course.InstructorUserId,
                     course.Status,
                     course.Category,
+                    course.Description,
+                    course.Semester,
+                    course.AcademicYear,
                     course.CreatedAt,
                     course.UpdatedAt,
                     course.CreatedBy
                 };
 
-                _context.Courses.Remove(course);
+                // Implement soft delete
+                course.IsDeleted = true;
+                course.DeletedAt = DateTime.UtcNow;
+                
                 await _context.SaveChangesAsync();
 
                 response.Data = (true, courseInfo);
-                response.Message = "Course deleted successfully.";
+                response.Message = "Course deleted successfully (soft delete).";
             }
             catch (Exception ex)
             {
@@ -203,6 +233,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var courses = await _context.Courses
+                    .Where(c => !c.IsDeleted)
                     .Include(c => c.Instructor)
                     .ThenInclude(t => t.User)
                     .Include(c => c.Creator)
@@ -233,7 +264,7 @@ namespace OnlineQuiz.Repository
                     .ThenInclude(t => t.User)
                     .Include(e => e.Course)
                     .ThenInclude(c => c.Creator)
-                    .Where(e => e.UserId == studentId)
+                    .Where(e => e.UserId == studentId && !e.Course.IsDeleted)
                     .Select(e => e.Course)
                     .ToListAsync();
 
@@ -293,7 +324,10 @@ namespace OnlineQuiz.Repository
                 }
 
                 // Check if course exists
-                var course = await _context.Courses.FindAsync(courseId);
+                var course = await _context.Courses
+                    .Where(c => !c.IsDeleted)
+                    .FirstOrDefaultAsync(c => c.CourseId == courseId);
+                    
                 if (course == null)
                 {
                     response.Success = false;
