@@ -30,13 +30,27 @@ namespace OnlineQuiz.Models
         [StringLength(30)]
         public string? EmergencyContactNumber { get; set; }
         
+        [StringLength(100)]
+        public string? EmergencyContactPersonName { get; set; }
+        
+        [StringLength(1000)]
+        public string? Bio { get; set; }
+        
+        public DateTime? LastLoginAt { get; set; }
+        
+        public bool IsDeleted { get; set; } = false;
+        
+        public DateTime? DeletedAt { get; set; }
+        
+        public long? DeletedBy { get; set; }
+        
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         
         // Navigation properties
         public virtual ICollection<UserRoleModel> UserRoles { get; set; } = new List<UserRoleModel>();
-        public virtual TeacherModel? Teacher { get; set; }
+        public virtual InstructorModel? Instructor { get; set; }
         public virtual StudentModel? Student { get; set; }
         public virtual ICollection<EnrollmentModel> Enrollments { get; set; } = new List<EnrollmentModel>();
         public virtual ICollection<AttemptModel> Attempts { get; set; } = new List<AttemptModel>();

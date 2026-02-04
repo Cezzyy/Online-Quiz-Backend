@@ -29,6 +29,28 @@ namespace OnlineQuiz.Models
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
+        // Notification Priority
+        [StringLength(20)]
+        public string Priority { get; set; } = "Normal";
+        
+        // Action/Link
+        [StringLength(500)]
+        public string? ActionUrl { get; set; }
+        
+        [StringLength(100)]
+        public string? ActionText { get; set; }
+        
+        // Delivery Status
+        public DateTime? ReadAt { get; set; }
+        
+        // Notification Metadata
+        public DateTime? ExpiresAt { get; set; }
+        
+        public bool IsArchived { get; set; } = false;
+        
+        // Timestamps
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
         // Navigation properties
         [ForeignKey("UserId")]
         public virtual UserModel User { get; set; } = null!;

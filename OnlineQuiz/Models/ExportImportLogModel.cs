@@ -25,6 +25,32 @@ namespace OnlineQuiz.Models
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
+        // File Information
+        public long? FileSize { get; set; }
+        
+        [StringLength(50)]
+        public string? FileType { get; set; }
+        
+        // Processing Status
+        [StringLength(20)]
+        public string Status { get; set; } = "Completed";
+        
+        public int? RecordsProcessed { get; set; }
+        
+        public int? RecordsSucceeded { get; set; }
+        
+        public int? RecordsFailed { get; set; }
+        
+        // Error Information
+        [Column(TypeName = "nvarchar(max)")]
+        public string? ErrorLog { get; set; }
+        
+        // Processing Time
+        public int? ProcessingTimeMs { get; set; }
+        
+        // Timestamps
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
         // Navigation properties
         [ForeignKey("UserId")]
         public virtual UserModel User { get; set; } = null!;

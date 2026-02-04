@@ -27,6 +27,19 @@ namespace OnlineQuiz.Models
 
         public DateTime? RevokedAt { get; set; }
 
+        // Token Metadata
+        [StringLength(100)]
+        public string? DeviceName { get; set; }
+        
+        // Revocation Information
+        public long? RevokedBy { get; set; }
+        
+        [StringLength(200)]
+        public string? RevokedReason { get; set; }
+        
+        // Timestamps
+        public DateTime? LastUsedAt { get; set; }
+
         public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
 
         public bool IsRevoked => RevokedAt.HasValue;

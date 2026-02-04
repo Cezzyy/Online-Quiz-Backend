@@ -16,6 +16,34 @@ namespace OnlineQuiz.Models
         
         public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
         
+        // Enrollment Status & Tracking
+        [StringLength(20)]
+        public string Status { get; set; } = "Active";
+        
+        public DateTime? CompletedAt { get; set; }
+        
+        public DateTime? DroppedAt { get; set; }
+        
+        [StringLength(500)]
+        public string? DropReason { get; set; }
+        
+        // Grade Information
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? FinalGrade { get; set; }
+        
+        [StringLength(5)]
+        public string? LetterGrade { get; set; }
+        
+        public bool IsPassed { get; set; } = false;
+        
+        // Progress Tracking
+        public int QuizzesCompleted { get; set; } = 0;
+        
+        public int TotalQuizzes { get; set; } = 0;
+        
+        // Timestamps
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
         // Navigation properties
         [ForeignKey("UserId")]
         public virtual UserModel User { get; set; } = null!;

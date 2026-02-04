@@ -17,6 +17,16 @@ namespace OnlineQuiz.Models
         [Column("Is_Correct")]
         public bool IsCorrect { get; set; } = false;
         
+        // Choice Ordering
+        public int OrderIndex { get; set; } = 0;
+        
+        // Choice Metadata
+        [StringLength(500)]
+        public string? Explanation { get; set; }
+        
+        // Timestamps
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
         // Navigation properties
         [ForeignKey("QuestionId")]
         public virtual QuestionModel Question { get; set; } = null!;

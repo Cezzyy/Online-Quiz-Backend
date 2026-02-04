@@ -178,14 +178,14 @@ namespace OnlineQuiz.Repository
                             _context.UserRoles.Add(userRole);
 
                             // Create Teacher or Student record based on role
-                            if (roleName == "Teacher")
+                            if (roleName == "Instructor")
                             {
-                                var teacher = new TeacherModel
+                                var instructor = new InstructorModel
                                 {
                                     UserId = user.UserId,
                                     Department = createUserDto.Department
                                 };
-                                _context.Teachers.Add(teacher);
+                                _context.Instructors.Add(instructor);
                             }
                             else if (roleName == "Student")
                             {
@@ -573,19 +573,19 @@ namespace OnlineQuiz.Repository
         {
             try
             {
-                var teachers = await _context.Teachers
+                var instructors = await _context.Instructors
                     .Include(t => t.User)
                     .ThenInclude(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .ToListAsync();
 
-                var teacherDtos = _mapper.Map<IEnumerable<TeacherDto>>(teachers);
+                var teacherDtos = _mapper.Map<IEnumerable<TeacherDto>>(instructors);
 
                 return new ServiceResponse<IEnumerable<TeacherDto>>
                 {
                     Success = true,
                     Data = teacherDtos,
-                    Message = "Teachers with complete profile information retrieved successfully"
+                    Message = "Instructors with complete profile information retrieved successfully"
                 };
             }
             catch (Exception ex)
@@ -593,7 +593,7 @@ namespace OnlineQuiz.Repository
                 return new ServiceResponse<IEnumerable<TeacherDto>>
                 {
                     Success = false,
-                    Message = $"Error retrieving teachers: {ex.Message}"
+                    Message = $"Error retrieving instructors: {ex.Message}"
                 };
             }
         }

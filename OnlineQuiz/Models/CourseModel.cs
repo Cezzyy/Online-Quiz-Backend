@@ -34,9 +34,34 @@ namespace OnlineQuiz.Models
         [Required]
         public long CreatedBy { get; set; } // Admin who created the course
         
+        // Course Details
+        [StringLength(2000)]
+        public string? Description { get; set; }
+        
+        // ACLC Academic Information
+        [StringLength(50)]
+        public string? Semester { get; set; }
+        
+        public int? AcademicYear { get; set; }
+        
+        public int? Units { get; set; }
+        
+        // Course Dates
+        public DateTime? StartDate { get; set; }
+        
+        public DateTime? EndDate { get; set; }
+        
+        // Visibility
+        public bool IsPublished { get; set; } = false;
+        
+        // Soft Delete
+        public bool IsDeleted { get; set; } = false;
+        
+        public DateTime? DeletedAt { get; set; }
+        
         // Navigation properties
         [ForeignKey("InstructorUserId")]
-        public virtual TeacherModel Instructor { get; set; } = null!;
+        public virtual InstructorModel Instructor { get; set; } = null!;
         
         [ForeignKey("CreatedBy")]
         public virtual UserModel Creator { get; set; } = null!;

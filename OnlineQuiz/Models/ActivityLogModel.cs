@@ -32,6 +32,29 @@ namespace OnlineQuiz.Models
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
+        // Request Information
+        [StringLength(10)]
+        public string? HttpMethod { get; set; }
+        
+        [StringLength(500)]
+        public string? RequestPath { get; set; }
+        
+        // Response Information
+        public int? StatusCode { get; set; }
+        
+        public int? ResponseTimeMs { get; set; }
+        
+        // Error Information
+        [StringLength(100)]
+        public string? ErrorCode { get; set; }
+        
+        [Column(TypeName = "nvarchar(max)")]
+        public string? ErrorMessage { get; set; }
+        
+        // Severity Level
+        [StringLength(20)]
+        public string Severity { get; set; } = "Info";
+        
         // Navigation properties
         [ForeignKey("UserId")]
         public virtual UserModel User { get; set; } = null!;

@@ -14,7 +14,7 @@ namespace OnlineQuiz.Data
         public DbSet<RoleModel> Roles { get; set; } = null!;
         public DbSet<UserRoleModel> UserRoles { get; set; } = null!;
         public DbSet<RefreshTokenModel> RefreshTokens { get; set; } = null!;
-        public DbSet<TeacherModel> Teachers { get; set; } = null!;
+        public DbSet<InstructorModel> Instructors { get; set; } = null!;
         public DbSet<StudentModel> Students { get; set; } = null!;
         public DbSet<CourseModel> Courses { get; set; } = null!;
         public DbSet<EnrollmentModel> Enrollments { get; set; } = null!;
@@ -68,10 +68,10 @@ namespace OnlineQuiz.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Configure one-to-one relationships
-            modelBuilder.Entity<TeacherModel>()
+            modelBuilder.Entity<InstructorModel>()
                 .HasOne(t => t.User)
-                .WithOne(u => u.Teacher)
-                .HasForeignKey<TeacherModel>(t => t.UserId)
+                .WithOne(u => u.Instructor)
+                .HasForeignKey<InstructorModel>(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<StudentModel>()
@@ -194,9 +194,122 @@ namespace OnlineQuiz.Data
             // Seed default roles
             modelBuilder.Entity<RoleModel>().HasData(
                 new RoleModel { RoleId = 1, Name = "Admin" },
-                new RoleModel { RoleId = 2, Name = "Teacher" },
+                new RoleModel { RoleId = 2, Name = "Instructor" },
                 new RoleModel { RoleId = 3, Name = "Student" }
             );
+
+            // Add check constraints using the new syntax
+            modelBuilder.Entity<StudentModel>()
+                .ToTable(t => t.HasCheckConstraint("CK_Students_EnrollmentStatus", 
+                    "EnrollmentStatus IN ('Active','OnLeave','Graduated','Withdrawn','Suspended')"));
+
+            modelBuilder.Entity<EnrollmentModel>()
+                .ToTable(t => t.HasCheckConstraint("CK_Enrollments_Status", 
+                    "Status IN ('Active','Dropped','Completed','Withdrawn')"));
+
+            modelBuilder.Entity<AttemptModel>()
+                .ToTable(t => t.HasCheckConstraint("CK_Attempts_Status", 
+                    "Status IN ('InProgress','Submitted','Abandoned','Graded')"));
+
+            // Add indexes for performance
+            modelBuilder.Entity<UserModel>()
+                .HasIndex(u => u.Status);
+            
+            modelBuilder.Entity<UserModel>()
+                .HasIndex(u => u.LastLoginAt);
+            
+            modelBuilder.Entity<UserModel>()
+                .HasIndex(u => u.IsDeleted);
+
+            modelBuilder.Entity<InstructorModel>()
+                .HasIndex(i => i.Department);
+
+            modelBuilder.Entity<StudentModel>()
+                .HasIndex(s => s.EnrollmentStatus);
+            
+            modelBuilder.Entity<StudentModel>()
+                .HasIndex(s => s.Program);
+            
+            modelBuilder.Entity<StudentModel>()
+                .HasIndex(s => s.YearLevel);
+
+            modelBuilder.Entity<CourseModel>()
+                .HasIndex(c => c.Status);
+            
+            modelBuilder.Entity<CourseModel>()
+                .HasIndex(c => c.Semester);
+            
+            modelBuilder.Entity<CourseModel>()
+                .HasIndex(c => c.AcademicYear);
+            
+            modelBuilder.Entity<CourseModel>()
+                .HasIndex(c => c.IsPublished);
+            
+            modelBuilder.Entity<CourseModel>()
+                .HasIndex(c => c.IsDeleted);
+            
+            modelBuilder.Entity<CourseModel>()
+                .HasIndex(c => new { c.StartDate, c.EndDate });
+
+            modelBuilder.Entity<EnrollmentModel>()
+                .HasIndex(e => e.Status);
+            
+            modelBuilder.Entity<EnrollmentModel>()
+                .HasIndex(e => e.EnrolledAt);
+
+            modelBuilder.Entity<QuizModel>()
+                .HasIndex(q => q.IsPublished);
+            
+            modelBuilder.Entity<QuizModel>()
+                .HasIndex(q => q.DueAt);
+            
+            modelBuilder.Entity<QuizModel>()
+                .HasIndex(q => new { q.AvailableFrom, q.AvailableUntil });
+            
+            modelBuilder.Entity<QuizModel>()
+                .HasIndex(q => q.IsDeleted);
+
+            modelBuilder.Entity<QuestionModel>()
+                .HasIndex(q => q.Type);
+            
+            modelBuilder.Entity<QuestionModel>()
+                .HasIndex(q => new { q.QuizId, q.SortOrder });
+
+            modelBuilder.Entity<AttemptModel>()
+                .HasIndex(a => a.Status);
+            
+            modelBuilder.Entity<AttemptModel>()
+                .HasIndex(a => a.SubmittedAt);
+            
+            modelBuilder.Entity<AttemptModel>()
+                .HasIndex(a => a.FlaggedForReview);
+
+            modelBuilder.Entity<NotificationModel>()
+                .HasIndex(n => n.Priority);
+            
+            modelBuilder.Entity<NotificationModel>()
+                .HasIndex(n => n.IsArchived);
+            
+            modelBuilder.Entity<NotificationModel>()
+                .HasIndex(n => n.ExpiresAt);
+
+            modelBuilder.Entity<ActivityLogModel>()
+                .HasIndex(a => new { a.Action, a.Entity });
+            
+            modelBuilder.Entity<ActivityLogModel>()
+                .HasIndex(a => a.CreatedAt);
+            
+            modelBuilder.Entity<ActivityLogModel>()
+                .HasIndex(a => a.Severity);
+
+            modelBuilder.Entity<RefreshTokenModel>()
+                .HasIndex(r => r.ExpiresAt);
+            
+            modelBuilder.Entity<RefreshTokenModel>()
+                .HasIndex(r => r.RevokedAt);
+
+            modelBuilder.Entity<ExportImportLogModel>()
+                .HasIndex(e => e.Status);
         }
     }
 }

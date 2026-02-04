@@ -24,6 +24,35 @@ namespace OnlineQuiz.Models
         [Column("Time_Spent_Seconds")]
         public int? TimeSpentSeconds { get; set; }
         
+        // Attempt Status
+        [StringLength(20)]
+        public string Status { get; set; } = "InProgress";
+        
+        // Grading Information
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? Percentage { get; set; }
+        
+        public bool IsPassed { get; set; } = false;
+        
+        // Feedback
+        [StringLength(2000)]
+        public string? InstructorFeedback { get; set; }
+        
+        public long? GradedBy { get; set; }
+        
+        public DateTime? GradedAt { get; set; }
+        
+        // Integrity Tracking
+        public int TabSwitchCount { get; set; } = 0;
+        
+        public bool FlaggedForReview { get; set; } = false;
+        
+        [StringLength(1000)]
+        public string? ReviewNotes { get; set; }
+        
+        // Timestamps
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
         // Navigation properties
         [ForeignKey("QuizId")]
         public virtual QuizModel Quiz { get; set; } = null!;

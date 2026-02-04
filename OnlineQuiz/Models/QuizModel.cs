@@ -28,6 +28,36 @@ namespace OnlineQuiz.Models
         
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         
+        // Quiz Configuration
+        [StringLength(2000)]
+        public string? Description { get; set; }
+        
+        [StringLength(1000)]
+        public string? Instructions { get; set; }
+        
+        // Attempt Configuration
+        public int? MaxAttempts { get; set; }
+        
+        public bool ShuffleQuestions { get; set; } = false;
+        
+        public bool ShuffleChoices { get; set; } = false;
+        
+        // Availability
+        public DateTime? AvailableFrom { get; set; }
+        
+        public DateTime? AvailableUntil { get; set; }
+        
+        // Grading Configuration
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal PassingScore { get; set; } = 60.00m;
+        
+        public bool ShowCorrectAnswers { get; set; } = true;
+        
+        public bool ShowScoreImmediately { get; set; } = true;
+        
+        // Soft Delete
+        public bool IsDeleted { get; set; } = false;
+        
         // Navigation properties
         [ForeignKey("CourseId")]
         public virtual CourseModel Course { get; set; } = null!;

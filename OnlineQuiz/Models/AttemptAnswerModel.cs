@@ -22,6 +22,24 @@ namespace OnlineQuiz.Models
         [Column("Is_Correct")]
         public bool? IsCorrect { get; set; }
         
+        // Answer Metadata
+        public DateTime AnsweredAt { get; set; } = DateTime.UtcNow;
+        
+        public int TimeSpentSeconds { get; set; } = 0;
+        
+        // Scoring
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? PointsEarned { get; set; }
+        
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? PointsPossible { get; set; }
+        
+        // Feedback
+        [StringLength(1000)]
+        public string? Feedback { get; set; }
+        
+        public bool IsSkipped { get; set; } = false;
+        
         // Navigation properties
         [ForeignKey("AttemptId")]
         public virtual AttemptModel Attempt { get; set; } = null!;

@@ -53,9 +53,9 @@ namespace OnlineQuiz.Mappings
                     opt.Condition((src, dest, srcMember) =>
                         srcMember != null && !string.IsNullOrEmpty(srcMember?.ToString())));
 
-            // Teacher mappings
-            CreateMap<TeacherModel, TeacherDto>();
-            CreateMap<CreateTeacherDto, TeacherModel>();
+            // Instructor mappings
+            CreateMap<InstructorModel, TeacherDto>();
+            CreateMap<CreateTeacherDto, InstructorModel>();
             
             // Student mappings
             CreateMap<StudentModel, StudentDto>();

@@ -24,6 +24,21 @@ namespace OnlineQuiz.Models
         [Column("Sort_Order")]
         public int SortOrder { get; set; } = 1;
         
+        // Question Metadata
+        [StringLength(1000)]
+        public string? Explanation { get; set; }
+        
+        // Media Support
+        [StringLength(500)]
+        public string? ImageUrl { get; set; }
+        
+        public bool IsRequired { get; set; } = true;
+        
+        // Timestamps
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        
         // Navigation properties
         [ForeignKey("QuizId")]
         public virtual QuizModel Quiz { get; set; } = null!;

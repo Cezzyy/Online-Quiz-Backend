@@ -20,7 +20,7 @@ namespace OnlineQuiz.DTOs
 
         // Navigation properties
         [ForeignKey("InstructorUserId")]
-        public virtual TeacherModel Instructor { get; set; } = null!;
+        public virtual InstructorModel Instructor { get; set; } = null!;
 
         public class CreateCourseDto
         {
