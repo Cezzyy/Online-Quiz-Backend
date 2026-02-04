@@ -10,8 +10,21 @@ namespace OnlineQuiz.DTOs
             public long QuizId { get; set; }
             public string QuestionText { get; set; } = string.Empty;
             public string QuestionType { get; set; } = string.Empty;
-            public int Points { get; set; }
+            public decimal Points { get; set; }
             public int OrderIndex { get; set; }
+            
+            // Question Metadata
+            public string? Explanation { get; set; }
+            
+            // Media Support
+            public string? ImageUrl { get; set; }
+            
+            public bool IsRequired { get; set; }
+            
+            // Timestamps
+            public DateTime CreatedAt { get; set; }
+            public DateTime UpdatedAt { get; set; }
+            
             public List<ChoiceDto> Choices { get; set; } = new();
         }
 
@@ -25,12 +38,46 @@ namespace OnlineQuiz.DTOs
             [StringLength(50)]
             public string QuestionType { get; set; } = "MultipleChoice";
             
-            [Range(1, 100)]
-            public int Points { get; set; } = 1;
+            [Range(0.01, 100)]
+            public decimal Points { get; set; } = 1;
             
             public int OrderIndex { get; set; }
             
+            // Question Metadata
+            [StringLength(1000)]
+            public string? Explanation { get; set; }
+            
+            // Media Support
+            [StringLength(500)]
+            public string? ImageUrl { get; set; }
+            
+            public bool IsRequired { get; set; } = true;
+            
             public List<CreateChoiceDto> Choices { get; set; } = new();
+        }
+
+        public class UpdateQuestionDto
+        {
+            [StringLength(1000)]
+            public string? QuestionText { get; set; }
+            
+            [StringLength(50)]
+            public string? QuestionType { get; set; }
+            
+            [Range(0.01, 100)]
+            public decimal? Points { get; set; }
+            
+            public int? OrderIndex { get; set; }
+            
+            // Question Metadata
+            [StringLength(1000)]
+            public string? Explanation { get; set; }
+            
+            // Media Support
+            [StringLength(500)]
+            public string? ImageUrl { get; set; }
+            
+            public bool? IsRequired { get; set; }
         }
 
         public class ChoiceDto

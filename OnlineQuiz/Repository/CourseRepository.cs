@@ -351,7 +351,12 @@ namespace OnlineQuiz.Repository
                 {
                     CourseId = courseId,
                     UserId = studentId,
-                    EnrolledAt = DateTime.UtcNow
+                    EnrolledAt = DateTime.UtcNow,
+                    Status = "Active",
+                    QuizzesCompleted = 0,
+                    TotalQuizzes = 0,
+                    IsPassed = false,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
                 _context.Enrollments.Add(enrollment);
@@ -422,7 +427,17 @@ namespace OnlineQuiz.Repository
                     CourseCode = e.Course?.Code,
                     StudentName = e.User?.FullName,
                     StudentEmail = e.User?.Email,
-                    EnrolledAt = e.EnrolledAt
+                    EnrolledAt = e.EnrolledAt,
+                    Status = e.Status,
+                    CompletedAt = e.CompletedAt,
+                    DroppedAt = e.DroppedAt,
+                    DropReason = e.DropReason,
+                    FinalGrade = e.FinalGrade,
+                    LetterGrade = e.LetterGrade,
+                    IsPassed = e.IsPassed,
+                    QuizzesCompleted = e.QuizzesCompleted,
+                    TotalQuizzes = e.TotalQuizzes,
+                    UpdatedAt = e.UpdatedAt
                 }).ToList();
 
                 response.Data = enrollmentDtos;
