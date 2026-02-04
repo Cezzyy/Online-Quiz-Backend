@@ -209,7 +209,9 @@ namespace OnlineQuiz.Controllers
                     await _activityLogService.LogEntityActionAsync(currentUserId, "CREATE", "User", result.Data.UserId, 
                         $"Created new user: {createUserDto.FullName} ({createUserDto.Email})", null, new { 
                             FullName = createUserDto.FullName, 
-                            Email = createUserDto.Email, 
+                            Email = createUserDto.Email,
+                            EmergencyContactPersonName = createUserDto.EmergencyContactPersonName,
+                            Bio = createUserDto.Bio,
                             Roles = createUserDto.Roles 
                         });
                 }
@@ -272,6 +274,8 @@ namespace OnlineQuiz.Controllers
                             FullName = updateUserDto.FullName, 
                             ContactNumber = updateUserDto.ContactNumber, 
                             EmergencyContactNumber = updateUserDto.EmergencyContactNumber,
+                            EmergencyContactPersonName = updateUserDto.EmergencyContactPersonName,
+                            Bio = updateUserDto.Bio,
                             Status = updateUserDto.Status
                         });
                 }
@@ -295,7 +299,7 @@ namespace OnlineQuiz.Controllers
         }
 
         /// <summary>
-        /// Delete a user
+        /// Delete a user (soft delete)
         /// </summary>
         /// <param name="id">User ID</param>
         /// <returns>Deletion confirmation</returns>
@@ -311,14 +315,27 @@ namespace OnlineQuiz.Controllers
 
                 // Get current user ID from JWT token
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                long? currentUserIdLong = null;
                 
-                // Prevent users from deleting themselves
-                if (currentUserId != null && long.TryParse(currentUserId, out var currentUserIdLong) && currentUserIdLong == id)
+                if (currentUserId != null && long.TryParse(currentUserId, out var parsedUserId))
                 {
-                    return BadRequest(new { message = "You cannot delete your own account" });
+                    currentUserIdLong = parsedUserId;
+                    
+                    // Prevent users from deleting themselves
+                    if (currentUserIdLong == id)
+                    {
+                        return BadRequest(new { message = "You cannot delete your own account" });
+                    }
                 }
 
-                var result = await _userService.DeleteUserAsync(id);
+                // Get the user to be deleted and set DeletedBy
+                var userToDelete = await _userService.GetUserByIdAsync(id);
+                if (!userToDelete.Success || userToDelete.Data == null)
+                {
+                    return NotFound(new { message = "User not found" });
+                }
+
+                var result = await _userService.DeleteUserAsync(id, currentUserIdLong);
                 
                 if (!result.Success)
                 {
@@ -326,16 +343,16 @@ namespace OnlineQuiz.Controllers
                 }
 
                 // Log activity for user deletion
-                if (currentUserId != null && long.TryParse(currentUserId, out long logCurrentUserId))
+                if (currentUserIdLong.HasValue)
                 {
-                    await _activityLogService.LogEntityActionAsync(logCurrentUserId, "DELETE", "User", id, 
-                        $"Deleted user with ID: {id}", null, null);
+                    await _activityLogService.LogEntityActionAsync(currentUserIdLong.Value, "DELETE", "User", id, 
+                        $"Soft deleted user with ID: {id}", null, null);
                 }
 
                 return Ok(new 
                 { 
                     success = true,
-                    message = "User deleted successfully",
+                    message = "User deleted successfully (soft delete)",
                     deletedUserId = id,
                     timestamp = DateTime.UtcNow
                 });

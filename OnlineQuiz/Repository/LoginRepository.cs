@@ -29,6 +29,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
@@ -92,6 +93,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.Email == email);

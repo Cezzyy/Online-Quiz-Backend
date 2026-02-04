@@ -118,7 +118,7 @@ namespace OnlineQuiz.Services
             }
         }
 
-        public async Task<ServiceResponse> DeleteUserAsync(long userId)
+        public async Task<ServiceResponse> DeleteUserAsync(long userId, long? deletedBy = null)
         {
             try
             {
@@ -130,7 +130,7 @@ namespace OnlineQuiz.Services
                 if (!existingUser.Success || existingUser.Data == null)
                     return new ServiceResponse("User not found");
 
-                return await _userRepository.DeleteUserAsync(userId);
+                return await _userRepository.DeleteUserAsync(userId, deletedBy);
             }
             catch (Exception ex)
             {
@@ -165,6 +165,18 @@ namespace OnlineQuiz.Services
 
             if (createUserDto.FullName.Length > 60)
                 return new ServiceResponse("Full name cannot exceed 60 characters");
+
+            if (!string.IsNullOrWhiteSpace(createUserDto.ContactNumber) && createUserDto.ContactNumber.Length > 30)
+                return new ServiceResponse("Contact number cannot exceed 30 characters");
+
+            if (!string.IsNullOrWhiteSpace(createUserDto.EmergencyContactNumber) && createUserDto.EmergencyContactNumber.Length > 30)
+                return new ServiceResponse("Emergency contact number cannot exceed 30 characters");
+
+            if (!string.IsNullOrWhiteSpace(createUserDto.EmergencyContactPersonName) && createUserDto.EmergencyContactPersonName.Length > 100)
+                return new ServiceResponse("Emergency contact person name cannot exceed 100 characters");
+
+            if (!string.IsNullOrWhiteSpace(createUserDto.Bio) && createUserDto.Bio.Length > 1000)
+                return new ServiceResponse("Bio cannot exceed 1000 characters");
 
             // Validate roles
             if (createUserDto.Roles == null || createUserDto.Roles.Count == 0)
@@ -214,6 +226,12 @@ namespace OnlineQuiz.Services
 
             if (!string.IsNullOrWhiteSpace(updateUserDto.EmergencyContactNumber) && updateUserDto.EmergencyContactNumber.Length > 30)
                 return new ServiceResponse("Emergency contact number cannot exceed 30 characters");
+
+            if (!string.IsNullOrWhiteSpace(updateUserDto.EmergencyContactPersonName) && updateUserDto.EmergencyContactPersonName.Length > 100)
+                return new ServiceResponse("Emergency contact person name cannot exceed 100 characters");
+
+            if (!string.IsNullOrWhiteSpace(updateUserDto.Bio) && updateUserDto.Bio.Length > 1000)
+                return new ServiceResponse("Bio cannot exceed 1000 characters");
 
             return new ServiceResponse();
         }

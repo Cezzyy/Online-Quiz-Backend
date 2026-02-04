@@ -29,6 +29,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var users = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .ToListAsync();
@@ -57,6 +58,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.UserId == userId);
@@ -94,6 +96,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.Email == email);
@@ -154,7 +157,10 @@ namespace OnlineQuiz.Repository
                     FullName = createUserDto.FullName,
                     ContactNumber = createUserDto.ContactNumber,
                     EmergencyContactNumber = createUserDto.EmergencyContactNumber,
+                    EmergencyContactPersonName = createUserDto.EmergencyContactPersonName,
+                    Bio = createUserDto.Bio,
                     Status = "Active",
+                    IsDeleted = false,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -277,6 +283,12 @@ namespace OnlineQuiz.Repository
                 if (updateUserDto.EmergencyContactNumber != null)
                     user.EmergencyContactNumber = updateUserDto.EmergencyContactNumber;
                 
+                if (updateUserDto.EmergencyContactPersonName != null)
+                    user.EmergencyContactPersonName = updateUserDto.EmergencyContactPersonName;
+                
+                if (updateUserDto.Bio != null)
+                    user.Bio = updateUserDto.Bio;
+                
                 if (!string.IsNullOrEmpty(updateUserDto.Status))
                     user.Status = updateUserDto.Status;
 
@@ -309,7 +321,7 @@ namespace OnlineQuiz.Repository
             }
         }
 
-        public async Task<ServiceResponse> DeleteUserAsync(long userId)
+        public async Task<ServiceResponse> DeleteUserAsync(long userId, long? deletedBy = null)
         {
             try
             {
@@ -323,7 +335,11 @@ namespace OnlineQuiz.Repository
                     };
                 }
 
-                _context.Users.Remove(user);
+                // Implement soft delete
+                user.IsDeleted = true;
+                user.DeletedAt = DateTime.UtcNow;
+                user.DeletedBy = deletedBy;
+                
                 await _context.SaveChangesAsync();
 
                 return new ServiceResponse
@@ -347,6 +363,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var user = await _context.Users
+                    .Where(u => !u.IsDeleted)
                     .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                     .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
@@ -368,6 +385,10 @@ namespace OnlineQuiz.Repository
                         Message = "User account is not active"
                     };
                 }
+
+                // Update LastLoginAt timestamp
+                user.LastLoginAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
 
                 // Generate JWT token
                 var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
@@ -543,7 +564,7 @@ namespace OnlineQuiz.Repository
                     };
 
                 var users = await _context.UserRoles
-                    .Where(ur => ur.Role.Name == roleName)
+                    .Where(ur => ur.Role.Name == roleName && !ur.User.IsDeleted)
                     .Include(ur => ur.User)
                     .ThenInclude(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
@@ -574,6 +595,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var instructors = await _context.Instructors
+                    .Where(t => !t.User.IsDeleted)
                     .Include(t => t.User)
                     .ThenInclude(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
@@ -603,6 +625,7 @@ namespace OnlineQuiz.Repository
             try
             {
                 var students = await _context.Students
+                    .Where(s => !s.User.IsDeleted)
                     .Include(s => s.User)
                     .ThenInclude(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)

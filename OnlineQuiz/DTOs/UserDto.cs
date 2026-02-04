@@ -10,6 +10,12 @@ namespace OnlineQuiz.DTOs
         public string Status { get; set; } = string.Empty;
         public string? ContactNumber { get; set; }
         public string? EmergencyContactNumber { get; set; }
+        public string? EmergencyContactPersonName { get; set; }
+        public string? Bio { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public long? DeletedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public List<string> Roles { get; set; } = [];
@@ -22,6 +28,8 @@ namespace OnlineQuiz.DTOs
         public string FullName { get; set; } = string.Empty;
         public string? ContactNumber { get; set; }
         public string? EmergencyContactNumber { get; set; }
+        public string? EmergencyContactPersonName { get; set; }
+        public string? Bio { get; set; }
         public List<string> Roles { get; set; } = [];
         
         // Teacher-specific information (optional, only used if Teacher role is assigned)
@@ -39,6 +47,8 @@ namespace OnlineQuiz.DTOs
         public string? FullName { get; set; }
         public string? ContactNumber { get; set; }
         public string? EmergencyContactNumber { get; set; }
+        public string? EmergencyContactPersonName { get; set; }
+        public string? Bio { get; set; }
         public string? Status { get; set; }
     }
 

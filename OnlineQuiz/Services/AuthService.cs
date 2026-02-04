@@ -63,6 +63,10 @@ namespace OnlineQuiz.Services
                 if (userModel == null)
                     return new ServiceResponse<LoginResponseDto>("User not found");
                 
+                // Update LastLoginAt timestamp
+                userModel.LastLoginAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                
                 // Generate new access token (15 minutes) and refresh token (7 days)
                 var jwtSettings = _configuration.GetSection("JwtSettings").Get<JwtSettings>() ?? new JwtSettings();
                 var roles = userModel.UserRoles?.Select(ur => ur.Role.Name).ToList() ?? [];
