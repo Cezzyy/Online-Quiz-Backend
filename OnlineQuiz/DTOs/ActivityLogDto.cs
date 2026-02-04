@@ -13,6 +13,21 @@ namespace OnlineQuiz.DTOs
         public long? EntityId { get; set; }
         public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
+        
+        // Request Information
+        public string? HttpMethod { get; set; }
+        public string? RequestPath { get; set; }
+        
+        // Response Information
+        public int? StatusCode { get; set; }
+        public int? ResponseTimeMs { get; set; }
+        
+        // Error Information
+        public string? ErrorCode { get; set; }
+        public string? ErrorMessage { get; set; }
+        
+        // Severity Level
+        public string Severity { get; set; } = "Info";
     }
 
     public class ActivityLogDetailDto : ActivityLogDto
@@ -27,6 +42,7 @@ namespace OnlineQuiz.DTOs
         public string? Action { get; set; }
         public string? Entity { get; set; }
         public long? EntityId { get; set; }
+        public string? Severity { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
         public int Page { get; set; } = 1;

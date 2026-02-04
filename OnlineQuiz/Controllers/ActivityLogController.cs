@@ -48,7 +48,14 @@ namespace OnlineQuiz.Controllers
                 Entity = a.Entity,
                 EntityId = a.EntityId,
                 Description = a.Description,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                HttpMethod = a.HttpMethod,
+                RequestPath = a.RequestPath,
+                StatusCode = a.StatusCode,
+                ResponseTimeMs = a.ResponseTimeMs,
+                ErrorCode = a.ErrorCode,
+                ErrorMessage = a.ErrorMessage,
+                Severity = a.Severity
             });
 
             return Ok(new
@@ -88,7 +95,14 @@ namespace OnlineQuiz.Controllers
                 Entity = a.Entity,
                 EntityId = a.EntityId,
                 Description = a.Description,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                HttpMethod = a.HttpMethod,
+                RequestPath = a.RequestPath,
+                StatusCode = a.StatusCode,
+                ResponseTimeMs = a.ResponseTimeMs,
+                ErrorCode = a.ErrorCode,
+                ErrorMessage = a.ErrorMessage,
+                Severity = a.Severity
             });
 
             return Ok(new
@@ -128,7 +142,14 @@ namespace OnlineQuiz.Controllers
                 Entity = a.Entity,
                 EntityId = a.EntityId,
                 Description = a.Description,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                HttpMethod = a.HttpMethod,
+                RequestPath = a.RequestPath,
+                StatusCode = a.StatusCode,
+                ResponseTimeMs = a.ResponseTimeMs,
+                ErrorCode = a.ErrorCode,
+                ErrorMessage = a.ErrorMessage,
+                Severity = a.Severity
             });
 
             return Ok(new
@@ -170,7 +191,14 @@ namespace OnlineQuiz.Controllers
                 Description = a.Description,
                 OldValues = a.OldValues,
                 NewValues = a.NewValues,
-                CreatedAt = a.CreatedAt
+                CreatedAt = a.CreatedAt,
+                HttpMethod = a.HttpMethod,
+                RequestPath = a.RequestPath,
+                StatusCode = a.StatusCode,
+                ResponseTimeMs = a.ResponseTimeMs,
+                ErrorCode = a.ErrorCode,
+                ErrorMessage = a.ErrorMessage,
+                Severity = a.Severity
             });
 
             return Ok(new

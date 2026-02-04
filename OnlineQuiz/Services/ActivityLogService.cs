@@ -31,8 +31,9 @@ namespace OnlineQuiz.Services
                     EntityId = entityId,
                     Description = description,
                     OldValues = oldValues != null ? JsonSerializer.Serialize(oldValues) : null,
-            NewValues = newValues != null ? JsonSerializer.Serialize(newValues) : null,
-                    CreatedAt = DateTime.UtcNow
+                    NewValues = newValues != null ? JsonSerializer.Serialize(newValues) : null,
+                    CreatedAt = DateTime.UtcNow,
+                    Severity = "Info" // Default severity
                 };
 
                 _context.ActivityLogs.Add(activityLog);
@@ -57,6 +58,40 @@ namespace OnlineQuiz.Services
         public async Task LogEntityActionAsync(long userId, string action, string entity, long entityId, string description, object? oldValues = null, object? newValues = null)
         {
             await LogActivityAsync(userId, action, entity, entityId, description, oldValues, newValues);
+        }
+
+        public async Task LogHttpRequestAsync(long userId, string action, string entity, long? entityId, string? description, 
+            string? httpMethod, string? requestPath, int? statusCode, int? responseTimeMs, string? errorCode = null, string? errorMessage = null, string severity = "Info")
+        {
+            try
+            {
+                var activityLog = new ActivityLogModel
+                {
+                    UserId = userId,
+                    Action = action.ToUpper(),
+                    Entity = entity,
+                    EntityId = entityId,
+                    Description = description,
+                    HttpMethod = httpMethod,
+                    RequestPath = requestPath,
+                    StatusCode = statusCode,
+                    ResponseTimeMs = responseTimeMs,
+                    ErrorCode = errorCode,
+                    ErrorMessage = errorMessage,
+                    Severity = severity,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.ActivityLogs.Add(activityLog);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("HTTP request logged: {HttpMethod} {RequestPath} - Status {StatusCode} - User {UserId}", 
+                    httpMethod, requestPath, statusCode, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to log HTTP request for user {UserId}", userId);
+            }
         }
 
         public async Task<ServiceResponse<IEnumerable<ActivityLogModel>>> GetUserActivityLogsAsync(long userId, int page = 1, int pageSize = 20)
