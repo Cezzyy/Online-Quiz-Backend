@@ -139,11 +139,23 @@ namespace OnlineQuiz.Controllers
             _logger.LogInformation("Successful login for user: {Email}, UserId: {UserId}, ClientType: {ClientType}, IP: {ClientIP}", 
                 loginDto.Email, response.Data.User?.Id, isWebClient ? "Web" : "Mobile", Request.HttpContext.Connection.RemoteIpAddress);
 
-            // Log activity
+            // Log activity with HTTP context
             if (response.Data.User?.Id != null)
             {
-                await _activityLogService.LogUserActionAsync(response.Data.User.Id, "LOGIN", 
-                    $"User logged in successfully from {(isWebClient ? "Web" : "Mobile")} client");
+                await _activityLogService.LogHttpRequestAsync(
+                    userId: response.Data.User.Id,
+                    action: "LOGIN",
+                    entity: "System",
+                    entityId: null,
+                    description: $"User logged in successfully from {(isWebClient ? "Web" : "Mobile")} client",
+                    httpMethod: Request.Method,
+                    requestPath: Request.Path,
+                    statusCode: 200,
+                    responseTimeMs: null, // Can be calculated if needed
+                    errorCode: null,
+                    errorMessage: null,
+                    severity: "Info"
+                );
             }
 
             return Ok(response);
@@ -185,8 +197,21 @@ namespace OnlineQuiz.Controllers
                         // I should do log error here gamit Ilogger and type shit pero unya lang wait lang
                     }
                     
-                    // Log activity
-                    await _activityLogService.LogUserActionAsync(userId, "LOGOUT", "User logged out successfully");
+                    // Log activity with HTTP context
+                    await _activityLogService.LogHttpRequestAsync(
+                        userId: userId,
+                        action: "LOGOUT",
+                        entity: "System",
+                        entityId: null,
+                        description: "User logged out successfully",
+                        httpMethod: Request.Method,
+                        requestPath: Request.Path,
+                        statusCode: 200,
+                        responseTimeMs: null,
+                        errorCode: null,
+                        errorMessage: null,
+                        severity: "Info"
+                    );
                 }
                 
                 return Ok(new { 

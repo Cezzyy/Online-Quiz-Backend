@@ -8,6 +8,7 @@ namespace OnlineQuiz.IServices
         Task LogActivityAsync(long userId, string action, string entity, long? entityId = null, string? description = null, object? oldValues = null, object? newValues = null);
         Task LogUserActionAsync(long userId, string action, string description);
         Task LogEntityActionAsync(long userId, string action, string entity, long entityId, string description, object? oldValues = null, object? newValues = null);
+        Task LogHttpRequestAsync(long userId, string action, string entity, long? entityId, string? description, string? httpMethod, string? requestPath, int? statusCode, int? responseTimeMs, string? errorCode = null, string? errorMessage = null, string severity = "Info");
         Task<ServiceResponse<IEnumerable<ActivityLogModel>>> GetUserActivityLogsAsync(long userId, int page = 1, int pageSize = 20);
         Task<ServiceResponse<IEnumerable<ActivityLogModel>>> GetEntityActivityLogsAsync(string entity, long entityId, int page = 1, int pageSize = 20);
         Task<ServiceResponse<IEnumerable<ActivityLogModel>>> GetAllActivityLogsAsync(int page = 1, int pageSize = 20);

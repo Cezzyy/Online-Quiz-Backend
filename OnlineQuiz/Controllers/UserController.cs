@@ -206,14 +206,20 @@ namespace OnlineQuiz.Controllers
                 var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (long.TryParse(currentUserIdClaim, out long currentUserId) && result.Data?.UserId != null)
                 {
-                    await _activityLogService.LogEntityActionAsync(currentUserId, "CREATE", "User", result.Data.UserId, 
-                        $"Created new user: {createUserDto.FullName} ({createUserDto.Email})", null, new { 
-                            FullName = createUserDto.FullName, 
-                            Email = createUserDto.Email,
-                            EmergencyContactPersonName = createUserDto.EmergencyContactPersonName,
-                            Bio = createUserDto.Bio,
-                            Roles = createUserDto.Roles 
-                        });
+                    await _activityLogService.LogHttpRequestAsync(
+                        userId: currentUserId,
+                        action: "CREATE",
+                        entity: "User",
+                        entityId: result.Data.UserId,
+                        description: $"Created new user: {createUserDto.FullName} ({createUserDto.Email})",
+                        httpMethod: Request.Method,
+                        requestPath: Request.Path,
+                        statusCode: 201,
+                        responseTimeMs: null,
+                        errorCode: null,
+                        errorMessage: null,
+                        severity: "Info"
+                    );
                 }
 
                 return CreatedAtAction(
@@ -269,15 +275,20 @@ namespace OnlineQuiz.Controllers
                 var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (long.TryParse(currentUserIdClaim, out long currentUserId))
                 {
-                    await _activityLogService.LogEntityActionAsync(currentUserId, "UPDATE", "User", id, 
-                        $"Updated user with ID: {id}", null, new { 
-                            FullName = updateUserDto.FullName, 
-                            ContactNumber = updateUserDto.ContactNumber, 
-                            EmergencyContactNumber = updateUserDto.EmergencyContactNumber,
-                            EmergencyContactPersonName = updateUserDto.EmergencyContactPersonName,
-                            Bio = updateUserDto.Bio,
-                            Status = updateUserDto.Status
-                        });
+                    await _activityLogService.LogHttpRequestAsync(
+                        userId: currentUserId,
+                        action: "UPDATE",
+                        entity: "User",
+                        entityId: id,
+                        description: $"Updated user with ID: {id}",
+                        httpMethod: Request.Method,
+                        requestPath: Request.Path,
+                        statusCode: 200,
+                        responseTimeMs: null,
+                        errorCode: null,
+                        errorMessage: null,
+                        severity: "Info"
+                    );
                 }
 
                 return Ok(new 
@@ -345,8 +356,20 @@ namespace OnlineQuiz.Controllers
                 // Log activity for user deletion
                 if (currentUserIdLong.HasValue)
                 {
-                    await _activityLogService.LogEntityActionAsync(currentUserIdLong.Value, "DELETE", "User", id, 
-                        $"Soft deleted user with ID: {id}", null, null);
+                    await _activityLogService.LogHttpRequestAsync(
+                        userId: currentUserIdLong.Value,
+                        action: "DELETE",
+                        entity: "User",
+                        entityId: id,
+                        description: $"Soft deleted user with ID: {id}",
+                        httpMethod: Request.Method,
+                        requestPath: Request.Path,
+                        statusCode: 204,
+                        responseTimeMs: null,
+                        errorCode: null,
+                        errorMessage: null,
+                        severity: "Warning"
+                    );
                 }
 
                 return Ok(new 
