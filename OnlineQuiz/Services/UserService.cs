@@ -187,11 +187,26 @@ namespace OnlineQuiz.Services
             if (invalidRoles.Count > 0)
                 return new ServiceResponse($"Invalid roles: {string.Join(", ", invalidRoles)}. Valid roles are: Admin, Teacher, Student");
 
-            // Validate Teacher-specific fields
-            if (createUserDto.Roles.Contains("Teacher"))
+            // Validate Instructor-specific fields
+            if (createUserDto.Roles.Contains("Instructor") || createUserDto.Roles.Contains("Teacher"))
             {
                 if (!string.IsNullOrWhiteSpace(createUserDto.Department) && createUserDto.Department.Length > 120)
                     return new ServiceResponse("Department cannot exceed 120 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.Title) && createUserDto.Title.Length > 100)
+                    return new ServiceResponse("Title cannot exceed 100 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.Specialization) && createUserDto.Specialization.Length > 100)
+                    return new ServiceResponse("Specialization cannot exceed 100 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.OfficeLocation) && createUserDto.OfficeLocation.Length > 100)
+                    return new ServiceResponse("Office location cannot exceed 100 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.OfficePhone) && createUserDto.OfficePhone.Length > 30)
+                    return new ServiceResponse("Office phone cannot exceed 30 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.ConsultationHours) && createUserDto.ConsultationHours.Length > 500)
+                    return new ServiceResponse("Consultation hours cannot exceed 500 characters");
             }
 
             // Validate Student-specific fields
@@ -208,6 +223,25 @@ namespace OnlineQuiz.Services
 
                 if (!string.IsNullOrWhiteSpace(createUserDto.Course) && createUserDto.Course.Length > 120)
                     return new ServiceResponse("Course cannot exceed 120 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.Program) && createUserDto.Program.Length > 100)
+                    return new ServiceResponse("Program cannot exceed 100 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.YearLevelString) && createUserDto.YearLevelString.Length > 20)
+                    return new ServiceResponse("Year level string cannot exceed 20 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.EnrollmentStatus) && createUserDto.EnrollmentStatus.Length > 20)
+                    return new ServiceResponse("Enrollment status cannot exceed 20 characters");
+                    
+                var validEnrollmentStatuses = new[] { "Active", "OnLeave", "Graduated", "Withdrawn", "Suspended" };
+                if (!string.IsNullOrWhiteSpace(createUserDto.EnrollmentStatus) && !validEnrollmentStatuses.Contains(createUserDto.EnrollmentStatus))
+                    return new ServiceResponse($"Invalid enrollment status. Valid values are: {string.Join(", ", validEnrollmentStatuses)}");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.GuardianName) && createUserDto.GuardianName.Length > 100)
+                    return new ServiceResponse("Guardian name cannot exceed 100 characters");
+                    
+                if (!string.IsNullOrWhiteSpace(createUserDto.GuardianContactNumber) && createUserDto.GuardianContactNumber.Length > 30)
+                    return new ServiceResponse("Guardian contact number cannot exceed 30 characters");
             }
 
             return new ServiceResponse();

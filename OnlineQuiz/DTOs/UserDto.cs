@@ -32,14 +32,24 @@ namespace OnlineQuiz.DTOs
         public string? Bio { get; set; }
         public List<string> Roles { get; set; } = [];
         
-        // Teacher-specific information (optional, only used if Teacher role is assigned)
+        // Instructor-specific information (optional, only used if Instructor role is assigned)
         public string? Department { get; set; }
+        public string? Title { get; set; }
+        public string? Specialization { get; set; }
+        public string? OfficeLocation { get; set; }
+        public string? OfficePhone { get; set; }
+        public string? ConsultationHours { get; set; }
         
         // Student-specific information (optional, only used if Student role is assigned)
         public string? StudentNumber { get; set; }
         public int? YearLevel { get; set; }
         public string? Section { get; set; }
         public string? Course { get; set; }
+        public string? Program { get; set; }
+        public string? YearLevelString { get; set; }
+        public string? EnrollmentStatus { get; set; }
+        public string? GuardianName { get; set; }
+        public string? GuardianContactNumber { get; set; }
     }
 
     public class UpdateUserDto
@@ -108,6 +118,22 @@ namespace OnlineQuiz.DTOs
     {
         public long UserId { get; set; }
         public string? Department { get; set; }
+        
+        // Professional Information
+        public string? Title { get; set; }
+        public string? Specialization { get; set; }
+        
+        // ACLC Office Information
+        public string? OfficeLocation { get; set; }
+        public string? OfficePhone { get; set; }
+        
+        // Availability Schedule
+        public string? ConsultationHours { get; set; }
+        
+        // Timestamps
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        
         public UserDto User { get; set; } = null!;
     }
 
@@ -118,12 +144,55 @@ namespace OnlineQuiz.DTOs
         public int? YearLevel { get; set; }
         public string? Section { get; set; }
         public string? Course { get; set; }
+        
+        // ACLC Academic Information
+        public string? Program { get; set; }
+        public string? YearLevelString { get; set; }
+        
+        // Enrollment Status
+        public string EnrollmentStatus { get; set; } = "Active";
+        
+        // Guardian/Parent Information
+        public string? GuardianName { get; set; }
+        public string? GuardianContactNumber { get; set; }
+        
+        // Timestamps
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        
         public UserDto User { get; set; } = null!;
     }
 
     public class CreateTeacherDto
     {
         public string? Department { get; set; }
+        
+        // Professional Information
+        public string? Title { get; set; }
+        public string? Specialization { get; set; }
+        
+        // ACLC Office Information
+        public string? OfficeLocation { get; set; }
+        public string? OfficePhone { get; set; }
+        
+        // Availability Schedule
+        public string? ConsultationHours { get; set; }
+    }
+
+    public class UpdateTeacherDto
+    {
+        public string? Department { get; set; }
+        
+        // Professional Information
+        public string? Title { get; set; }
+        public string? Specialization { get; set; }
+        
+        // ACLC Office Information
+        public string? OfficeLocation { get; set; }
+        public string? OfficePhone { get; set; }
+        
+        // Availability Schedule
+        public string? ConsultationHours { get; set; }
     }
 
     public class CreateStudentDto
@@ -132,5 +201,35 @@ namespace OnlineQuiz.DTOs
         public int? YearLevel { get; set; }
         public string? Section { get; set; }
         public string? Course { get; set; }
+        
+        // ACLC Academic Information
+        public string? Program { get; set; }
+        public string? YearLevelString { get; set; }
+        
+        // Enrollment Status
+        public string EnrollmentStatus { get; set; } = "Active";
+        
+        // Guardian/Parent Information
+        public string? GuardianName { get; set; }
+        public string? GuardianContactNumber { get; set; }
+    }
+
+    public class UpdateStudentDto
+    {
+        public string? StudentNumber { get; set; }
+        public int? YearLevel { get; set; }
+        public string? Section { get; set; }
+        public string? Course { get; set; }
+        
+        // ACLC Academic Information
+        public string? Program { get; set; }
+        public string? YearLevelString { get; set; }
+        
+        // Enrollment Status
+        public string? EnrollmentStatus { get; set; }
+        
+        // Guardian/Parent Information
+        public string? GuardianName { get; set; }
+        public string? GuardianContactNumber { get; set; }
     }
 }

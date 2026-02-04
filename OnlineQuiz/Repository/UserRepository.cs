@@ -189,7 +189,14 @@ namespace OnlineQuiz.Repository
                                 var instructor = new InstructorModel
                                 {
                                     UserId = user.UserId,
-                                    Department = createUserDto.Department
+                                    Department = createUserDto.Department,
+                                    Title = createUserDto.Title,
+                                    Specialization = createUserDto.Specialization,
+                                    OfficeLocation = createUserDto.OfficeLocation,
+                                    OfficePhone = createUserDto.OfficePhone,
+                                    ConsultationHours = createUserDto.ConsultationHours,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
                                 };
                                 _context.Instructors.Add(instructor);
                             }
@@ -225,7 +232,14 @@ namespace OnlineQuiz.Repository
                                     StudentNumber = studentNumber,
                                     YearLevel = createUserDto.YearLevel,
                                     Section = createUserDto.Section,
-                                    Course = createUserDto.Course
+                                    Course = createUserDto.Course,
+                                    Program = createUserDto.Program,
+                                    YearLevelString = createUserDto.YearLevelString,
+                                    EnrollmentStatus = createUserDto.EnrollmentStatus ?? "Active",
+                                    GuardianName = createUserDto.GuardianName,
+                                    GuardianContactNumber = createUserDto.GuardianContactNumber,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
                                 };
                                 _context.Students.Add(student);
                             }
