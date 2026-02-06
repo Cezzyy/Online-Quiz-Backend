@@ -30,9 +30,132 @@ namespace OnlineQuiz.Repository
                     .Include(c => c.Instructor)
                     .ThenInclude(t => t.User)
                     .Include(c => c.Creator)
+                    .Include(c => c.Enrollments)
+                    .Include(c => c.Quizzes)
                     .ToListAsync();
 
-                response.Data = _mapper.Map<IEnumerable<CourseDTO.CourseDto>>(courses);
+                var courseDtos = courses.Select(c => {
+                    var dto = _mapper.Map<CourseDTO.CourseDto>(c);
+                    dto.EnrollmentCount = c.Enrollments.Count;
+                    dto.QuizCount = c.Quizzes.Count;
+                    return dto;
+                }).ToList();
+
+                response.Data = courseDtos;
+                response.Message = "Courses retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving courses: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<CourseDTO.PagedCoursesDto>> GetCoursesWithFilterAsync(CourseDTO.CourseFilterDto filter)
+        {
+            var response = new ServiceResponse<CourseDTO.PagedCoursesDto>();
+
+            try
+            {
+                var query = _context.Courses
+                    .Where(c => !c.IsDeleted)
+                    .Include(c => c.Instructor)
+                    .ThenInclude(t => t.User)
+                    .Include(c => c.Creator)
+                    .Include(c => c.Enrollments)
+                    .Include(c => c.Quizzes)
+                    .AsQueryable();
+
+                // Apply filters
+                if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+                {
+                    var searchLower = filter.SearchTerm.ToLower();
+                    query = query.Where(c => 
+                        c.Code.ToLower().Contains(searchLower) || 
+                        c.Name.ToLower().Contains(searchLower) ||
+                        (c.Description != null && c.Description.ToLower().Contains(searchLower)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.Status))
+                {
+                    query = query.Where(c => c.Status == filter.Status);
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.Category))
+                {
+                    query = query.Where(c => c.Category == filter.Category);
+                }
+
+                if (filter.InstructorUserId.HasValue)
+                {
+                    query = query.Where(c => c.InstructorUserId == filter.InstructorUserId.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(filter.Semester))
+                {
+                    query = query.Where(c => c.Semester == filter.Semester);
+                }
+
+                if (filter.AcademicYear.HasValue)
+                {
+                    query = query.Where(c => c.AcademicYear == filter.AcademicYear.Value);
+                }
+
+                if (filter.IsPublished.HasValue)
+                {
+                    query = query.Where(c => c.IsPublished == filter.IsPublished.Value);
+                }
+
+                // Get total count before pagination
+                var totalCount = await query.CountAsync();
+
+                // Apply sorting
+                query = filter.SortBy.ToLower() switch
+                {
+                    "code" => filter.SortOrder.ToLower() == "asc" 
+                        ? query.OrderBy(c => c.Code) 
+                        : query.OrderByDescending(c => c.Code),
+                    "name" => filter.SortOrder.ToLower() == "asc" 
+                        ? query.OrderBy(c => c.Name) 
+                        : query.OrderByDescending(c => c.Name),
+                    "status" => filter.SortOrder.ToLower() == "asc" 
+                        ? query.OrderBy(c => c.Status) 
+                        : query.OrderByDescending(c => c.Status),
+                    "updatedat" => filter.SortOrder.ToLower() == "asc" 
+                        ? query.OrderBy(c => c.UpdatedAt) 
+                        : query.OrderByDescending(c => c.UpdatedAt),
+                    _ => filter.SortOrder.ToLower() == "asc" 
+                        ? query.OrderBy(c => c.CreatedAt) 
+                        : query.OrderByDescending(c => c.CreatedAt)
+                };
+
+                // Apply pagination
+                var courses = await query
+                    .Skip((filter.PageNumber - 1) * filter.PageSize)
+                    .Take(filter.PageSize)
+                    .ToListAsync();
+
+                var courseDtos = courses.Select(c => {
+                    var dto = _mapper.Map<CourseDTO.CourseDto>(c);
+                    dto.EnrollmentCount = c.Enrollments.Count;
+                    dto.QuizCount = c.Quizzes.Count;
+                    return dto;
+                }).ToList();
+
+                var totalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize);
+
+                response.Data = new CourseDTO.PagedCoursesDto
+                {
+                    Courses = courseDtos,
+                    TotalCount = totalCount,
+                    PageNumber = filter.PageNumber,
+                    PageSize = filter.PageSize,
+                    TotalPages = totalPages,
+                    HasPreviousPage = filter.PageNumber > 1,
+                    HasNextPage = filter.PageNumber < totalPages
+                };
                 response.Message = "Courses retrieved successfully.";
             }
             catch (Exception ex)
@@ -470,6 +593,72 @@ namespace OnlineQuiz.Repository
             {
                 response.Success = false;
                 response.Message = $"Error checking enrollment: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<CourseDTO.CourseStatisticsDto>> GetCourseStatisticsAsync(long courseId)
+        {
+            var response = new ServiceResponse<CourseDTO.CourseStatisticsDto>();
+
+            try
+            {
+                var course = await _context.Courses
+                    .Where(c => !c.IsDeleted && c.CourseId == courseId)
+                    .Include(c => c.Enrollments)
+                    .Include(c => c.Quizzes)
+                    .FirstOrDefaultAsync();
+
+                if (course == null)
+                {
+                    response.Success = false;
+                    response.Message = "Course not found.";
+                    return response;
+                }
+
+                var enrollments = course.Enrollments.ToList();
+                var activeEnrollments = enrollments.Count(e => e.Status == "Active");
+                var completedEnrollments = enrollments.Count(e => e.Status == "Completed");
+                var droppedEnrollments = enrollments.Count(e => e.Status == "Dropped");
+
+                var enrollmentsWithGrades = enrollments.Where(e => e.FinalGrade.HasValue).ToList();
+                var averageGrade = enrollmentsWithGrades.Any() 
+                    ? enrollmentsWithGrades.Average(e => e.FinalGrade!.Value) 
+                    : 0;
+
+                var passedCount = enrollments.Count(e => e.IsPassed);
+                var passRate = enrollments.Count > 0 
+                    ? (decimal)passedCount / enrollments.Count * 100 
+                    : 0;
+
+                var publishedQuizzes = course.Quizzes.Count(q => q.IsPublished);
+
+                var lastActivityDate = enrollments.Any() 
+                    ? enrollments.Max(e => e.UpdatedAt) 
+                    : (DateTime?)null;
+
+                response.Data = new CourseDTO.CourseStatisticsDto
+                {
+                    CourseId = course.CourseId,
+                    CourseName = course.Name,
+                    CourseCode = course.Code,
+                    TotalEnrollments = enrollments.Count,
+                    ActiveEnrollments = activeEnrollments,
+                    CompletedEnrollments = completedEnrollments,
+                    DroppedEnrollments = droppedEnrollments,
+                    TotalQuizzes = course.Quizzes.Count,
+                    PublishedQuizzes = publishedQuizzes,
+                    AverageGrade = Math.Round(averageGrade, 2),
+                    PassRate = Math.Round(passRate, 2),
+                    LastActivityDate = lastActivityDate
+                };
+                response.Message = "Course statistics retrieved successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = $"Error retrieving course statistics: {ex.Message}";
             }
 
             return response;

@@ -31,6 +31,9 @@ namespace OnlineQuiz.Services
         public async Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetAllCoursesAsync() =>
             await _courseRepository.GetAllCoursesAsync();
 
+        public async Task<ServiceResponse<CourseDTO.PagedCoursesDto>> GetCoursesWithFilterAsync(CourseDTO.CourseFilterDto filter) =>
+            await _courseRepository.GetCoursesWithFilterAsync(filter);
+
         public async Task<ServiceResponse<CourseDTO.CourseDto>> GetCourseByIdAsync(long id) =>
             await _courseRepository.GetCourseByIdAsync(id);
 
@@ -97,6 +100,11 @@ namespace OnlineQuiz.Services
         public async Task<ServiceResponse<bool>> IsStudentEnrolledAsync(long userId, long courseId)
         {
             return await _courseRepository.IsStudentEnrolledInCourseAsync(userId, courseId);
+        }
+
+        public async Task<ServiceResponse<CourseDTO.CourseStatisticsDto>> GetCourseStatisticsAsync(long courseId)
+        {
+            return await _courseRepository.GetCourseStatisticsAsync(courseId);
         }
     }
 }

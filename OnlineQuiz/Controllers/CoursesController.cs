@@ -25,6 +25,17 @@ namespace OnlineQuiz.Controllers
             return Ok(courses);
         }
 
+        [HttpGet("filter")]
+        public async Task<ActionResult<CourseDTO.PagedCoursesDto>> GetCoursesWithFilter([FromQuery] CourseDTO.CourseFilterDto filter)
+        {
+            var result = await _courseService.GetCoursesWithFilterAsync(filter);
+            if (!result.Success)
+            {
+                return BadRequest(result.Message);
+            }
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<CourseDto>> GetCourse(long id)
         {
@@ -34,6 +45,17 @@ namespace OnlineQuiz.Controllers
                 return NotFound();
             }
             return Ok(course);
+        }
+
+        [HttpGet("{id}/statistics")]
+        public async Task<ActionResult<CourseDTO.CourseStatisticsDto>> GetCourseStatistics(long id)
+        {
+            var result = await _courseService.GetCourseStatisticsAsync(id);
+            if (!result.Success)
+            {
+                return NotFound(result.Message);
+            }
+            return Ok(result);
         }
 
         [HttpPost]

@@ -6,6 +6,7 @@ namespace OnlineQuiz.IServices
     public interface ICourseService
     {
         Task<ServiceResponse<IEnumerable<CourseDTO.CourseDto>>> GetAllCoursesAsync();
+        Task<ServiceResponse<CourseDTO.PagedCoursesDto>> GetCoursesWithFilterAsync(CourseDTO.CourseFilterDto filter);
         Task<ServiceResponse<CourseDTO.CourseDto>> GetCourseByIdAsync(long id);
         Task<ServiceResponse<CourseDTO.CourseDto>> CreateCourseAsync(CourseDTO.CreateCourseDto dto);
         Task<ServiceResponse<CourseDTO.CourseDto>> UpdateCourseAsync(long id, CourseDTO.UpdateCourseDto dto);
@@ -18,5 +19,8 @@ namespace OnlineQuiz.IServices
         Task<ServiceResponse<bool>> UnenrollStudentAsync(long userId, long courseId);
         Task<ServiceResponse<IEnumerable<EnrollmentDTO.EnrollmentDto>>> GetCourseEnrollmentsAsync(long courseId);
         Task<ServiceResponse<bool>> IsStudentEnrolledAsync(long userId, long courseId);
+        
+        // Statistics
+        Task<ServiceResponse<CourseDTO.CourseStatisticsDto>> GetCourseStatisticsAsync(long courseId);
     }
 }
