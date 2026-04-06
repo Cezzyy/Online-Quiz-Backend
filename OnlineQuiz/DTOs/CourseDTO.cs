@@ -91,39 +91,6 @@ namespace OnlineQuiz.DTOs
             public bool? IsPublished { get; set; }
         }
 
-        public class UpdateCourseDto
-        {
-            [StringLength(20, MinimumLength = 3, ErrorMessage = "Course code must be between 3 and 20 characters")]
-            public string? Code { get; set; }
-            
-            [StringLength(200, MinimumLength = 3, ErrorMessage = "Course name must be between 3 and 200 characters")]
-            public string? Name { get; set; }
-            
-            public long? InstructorUserId { get; set; }
-            
-            [StringLength(50)]
-            public string? Status { get; set; }
-            
-            [StringLength(100)]
-            public string? Category { get; set; }
-            
-            [StringLength(2000)]
-            public string? Description { get; set; }
-            
-            [StringLength(50)]
-            public string? Semester { get; set; }
-            
-            [Range(2000, 2100, ErrorMessage = "Academic year must be between 2000 and 2100")]
-            public int? AcademicYear { get; set; }
-            
-            [Range(1, 10, ErrorMessage = "Units must be between 1 and 10")]
-            public int? Units { get; set; }
-            
-            public DateTime? StartDate { get; set; }
-            public DateTime? EndDate { get; set; }
-            public bool? IsPublished { get; set; }
-        }
-
         public class CourseDto
         {
             public long CourseId { get; set; }
